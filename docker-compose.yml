@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pelada
+      POSTGRES_PASSWORD: pelada
+      POSTGRES_DB: pelada
+    ports:
+      - "5432:5432"
+    volumes:
+      - pelada_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # Opcional — só sobe com `docker compose --profile pooled up`. Serve pra testar o caminho
+  # com pooler localmente antes de produção; dev normal não precisa disso (ver infra/pgcat/README.md).
+  pgcat:
+    build: ./infra/pgcat
+    profiles: ["pooled"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: pelada
+      POSTGRES_USER: pelada
+      POSTGRES_PASSWORD: pelada
+      PGCAT_ADMIN_PASSWORD: admin-dev-only
+    ports:
+      - "6432:6432"
+    depends_on:
+      - postgres
+
+volumes:
+  pelada_postgres_data:

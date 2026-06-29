@@ -1,0 +1,28 @@
+{
+  "name": "pelada",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "lint": "eslint . && pnpm --filter @pelada/web lint",
+    "format": "prettier --write .",
+    "dev": "concurrently -n api,web -c blue,green \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev:api": "pnpm --filter @pelada/api dev",
+    "dev:web": "pnpm --filter @pelada/web dev",
+    "start:api": "pnpm --filter @pelada/api build && pnpm --filter @pelada/api start",
+    "start:web": "pnpm --filter @pelada/web build && pnpm --filter @pelada/web start",
+    "test": "pnpm -r --if-present test",
+    "test:api": "pnpm --filter @pelada/api test",
+    "test:api:integration": "pnpm --filter @pelada/api test:integration",
+    "test:web": "pnpm --filter @pelada/web test",
+    "test:core": "pnpm --filter @pelada/core test"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "concurrently": "^8.2.2",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "catalog:"
+  }
+}

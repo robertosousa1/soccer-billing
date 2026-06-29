@@ -1,0 +1,25 @@
+[general]
+host = "0.0.0.0"
+port = ${PGCAT_LISTEN_PORT}
+admin_username = "${PGCAT_ADMIN_USER}"
+admin_password = "${PGCAT_ADMIN_PASSWORD}"
+connect_timeout = 5000
+idle_timeout = 30000
+server_lifetime = 86400000
+
+# Pool único, sem sharding (um Postgres só por pelada/ambiente).
+# pool_mode = "transaction": é o motivo de usarmos pgcat em vez de pgbouncer — lida bem com a
+# transação interativa do ConfirmReconciliationService (prisma.$transaction). Ver
+# docs/DATA_MODEL.md "Postgres + pgbouncer/pgcat".
+[pools.pelada]
+pool_mode = "transaction"
+default_role = "primary"
+
+[pools.pelada.users.0]
+username = "${POSTGRES_USER}"
+password = "${POSTGRES_PASSWORD}"
+pool_size = ${PGCAT_POOL_SIZE}
+
+[pools.pelada.shards.0]
+servers = [["${POSTGRES_HOST}", ${POSTGRES_PORT}, "primary"]]
+database = "${POSTGRES_DB}"

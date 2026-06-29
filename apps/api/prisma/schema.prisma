@@ -1,0 +1,191 @@
+// Caixa da Pelada — schema.
+// Dinheiro: guardado em CENTAVOS (Int) por exatidão. A API expõe SEMPRE em R$ (string
+// formatada, ex.: "R$ 70,00"); a conversão (format/parse) é responsabilidade do backend.
+// Datas: `data` "YYYY-MM-DD"; `competencia`/`desde` "YYYY-MM".
+// Multi-tenant: uma Pelada tem vários organizadores (N:N via PeladaMember) e um organizador
+// pode gerir várias peladas. Todos os dados de domínio são escopados por `peladaId`.
+// Banco: PostgreSQL atrás de pgcat (url pooled + directUrl direta — ver .env.example).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum PayerType {
+  MENSALISTA
+  AVULSO
+}
+
+enum ShareCategory {
+  MENSALIDADE
+  AVULSO
+  OUTRO
+  CONTRIBUICAO // pagamento extra de quem já pagou a mensalidade do mês
+}
+
+enum OutflowCategory {
+  QUADRA
+  OUTRA_SAIDA
+}
+
+enum MemberRole {
+  OWNER  // tudo, incl. gerir admins/owners, renomear/excluir a pelada
+  ADMIN  // todas as ações de DADOS; NÃO gerencia membros (nem readers)
+  READER // somente leitura (dados, infos, relatórios)
+}
+
+/// Pessoa que faz login (organizador). Pode gerir várias peladas.
+model User {
+  id          String         @id @default(uuid())
+  name        String
+  email       String         @unique
+  password    String
+  memberships PeladaMember[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+/// A pelada (grupo). Tem nome (parâmetro), config própria e dados escopados.
+model Pelada {
+  id           String         @id @default(uuid())
+  nome         String
+  members      PeladaMember[]
+  config       Config?
+  payers       Payer[]
+  imports      Import[]
+  transactions Transaction[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+/// N:N entre User e Pelada, com papel.
+model PeladaMember {
+  id        String     @id @default(uuid())
+  pelada    Pelada     @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId  String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      MemberRole @default(READER)
+  createdAt DateTime   @default(now())
+
+  @@unique([peladaId, userId])
+  @@index([userId])
+}
+
+/// Configuração da pelada (1:1). Valores em centavos. Inclui parâmetros do WhatsApp.
+model Config {
+  id                 String            @id @default(uuid())
+  pelada             Pelada            @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId           String            @unique
+  valorMensalidade   Int
+  valorAvulso        Int
+  valorAluguel       Int
+  diaPagamentoQuadra Int               @default(10)
+  courtIdentifiers   CourtIdentifier[]
+
+  // Lembretes de WhatsApp (parametrização do sistema)
+  whatsappRemindersEnabled Boolean @default(false)
+  whatsappReminderDay      Int?
+  whatsappTemplate         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Nome/chave Pix como a quadra aparece no extrato.
+model CourtIdentifier {
+  id       String @id @default(uuid())
+  value    String
+  config   Config @relation(fields: [configId], references: [id], onDelete: Cascade)
+  configId String
+}
+
+/// Base de pagantes — escopada por pelada, independente das importações.
+model Payer {
+  id        String       @id @default(uuid())
+  pelada    Pelada       @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId  String
+  nome      String
+  tipo      PayerType
+  ativo     Boolean      @default(true)
+  desde     String?      // "YYYY-MM" — só mensalista
+  telefone  String?
+  aliases   PayerAlias[]
+  shares    Share[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([peladaId])
+}
+
+/// Grafias reconhecidas no extrato. Único POR PELADA: um nome -> um pagante na pelada.
+model PayerAlias {
+  id        String @id @default(uuid())
+  peladaId  String // denormalizado para garantir unicidade por pelada
+  alias     String
+  aliasNorm String
+  payer     Payer  @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  payerId   String
+
+  @@unique([peladaId, aliasNorm])
+  @@index([payerId])
+}
+
+/// Cada arquivo de extrato importado. rawFileKey = arquivo bruto no storage (auditoria).
+model Import {
+  id            String        @id @default(uuid())
+  pelada        Pelada        @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId      String
+  hash          String
+  nomeArquivo   String
+  rawFileKey    String? // chave no storage (S3) do extrato original
+  qtdNovas      Int
+  qtdDuplicadas Int
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+
+  @@index([peladaId])
+}
+
+/// Uma linha do extrato. chaveNatural única POR PELADA (dedup entre arquivos sobrepostos).
+model Transaction {
+  id              String           @id @default(uuid())
+  pelada          Pelada           @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId        String
+  data            String // "YYYY-MM-DD"
+  hora            String
+  nomeOriginal    String
+  valor           Int // centavos; negativo = saída
+  formaPagamento  String?
+  competencia     String // "YYYY-MM"
+  chaveNatural    String // data|hora|nomeNorm|valor
+  ignorada        Boolean          @default(false)
+  outflowCategory OutflowCategory? // só saídas
+  shares          Share[] // só entradas
+  import          Import?          @relation(fields: [importId], references: [id])
+  importId        String?
+  createdAt       DateTime         @default(now())
+
+  @@unique([peladaId, chaveNatural])
+  @@index([peladaId, competencia])
+}
+
+/// Cota de uma entrada: parte do valor atribuída a um pagante. ordem 0 = pagador real.
+model Share {
+  id            String        @id @default(uuid())
+  valor         Int // centavos
+  categoria     ShareCategory
+  ordem         Int           @default(0)
+  transaction   Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  payer         Payer?        @relation(fields: [payerId], references: [id])
+  payerId       String?
+
+  @@index([payerId])
+  @@index([transactionId])
+}
