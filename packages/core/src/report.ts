@@ -1,5 +1,5 @@
 import { addMonths } from "./date";
-import type { Config, Payer, Share, Transaction } from "./types";
+import type { Config, Payer, PayerTypeChange, Share, Transaction } from "./types";
 
 export interface MonthlyReport {
   totalEntradas: number;
@@ -55,9 +55,41 @@ function entradasAposAntecipacao(transactions: Transaction[], config: Config | u
 }
 
 /**
+ * Resolve o `tipo`/`desde` de um pagante como valiam na competência `ym`, usando a troca de
+ * tipo mais recente cujo `vigenteDesde` seja `<= ym` (histórico em `changes`). Sem troca
+ * aplicável (pagante nunca trocou de tipo, ou `ym` é anterior à primeira troca registrada),
+ * cai para o `tipo`/`desde` atuais do pagante — comportamento idêntico ao de antes desta
+ * função existir. Ver DOMAIN.md (tipo do pagante é snapshot por competência, igual Config §11).
+ */
+export function resolveTipoEDesde(
+  payer: Payer,
+  changes: PayerTypeChange[],
+  ym: string,
+): { tipo: Payer["tipo"]; desde: string | null } {
+  const doPayer = changes
+    .filter((c) => c.payerId === payer.id)
+    .sort((a, b) => b.vigenteDesde.localeCompare(a.vigenteDesde));
+  const ativa = doPayer.find((c) => c.vigenteDesde <= ym);
+  if (ativa) {
+    return { tipo: ativa.tipo, desde: ativa.tipo === "MENSALISTA" ? ativa.vigenteDesde : null };
+  }
+  const primeira = doPayer.at(-1);
+  if (primeira) {
+    // ym é anterior à primeira troca registrada: o tipo original é o oposto dessa troca
+    const tipoOriginal: Payer["tipo"] = primeira.tipo === "MENSALISTA" ? "AVULSO" : "MENSALISTA";
+    return { tipo: tipoOriginal, desde: tipoOriginal === "MENSALISTA" ? (payer.desde ?? null) : null };
+  }
+  return { tipo: payer.tipo, desde: payer.tipo === "MENSALISTA" ? (payer.desde ?? null) : null };
+}
+
+/**
  * `config` é opcional e usado só para a regra de antecipação da quadra (abaixo) — todo o
  * resto do relatório (quem pagou, inadimplência, totais de saída) deriva exclusivamente dos
  * lançamentos salvos, nunca da config (ver DOMAIN.md §11).
+ *
+ * `payerTypeChanges` é o histórico de trocas de tipo (mensalista <-> avulso) — usado para que
+ * a inadimplência de `ym` reflita o tipo que o pagante tinha NAQUELA competência, não o tipo
+ * atual (ver `resolveTipoEDesde` e DOMAIN.md).
  *
  * Regra de antecipação: se a quadra do mês foi paga (saídas QUADRA somam >= valorAluguel)
  * antes do dia `diaPagamentoQuadra`, todo valor que entrar depois dessa saída conta como caixa
@@ -65,7 +97,13 @@ function entradasAposAntecipacao(transactions: Transaction[], config: Config | u
  * Só desloca o caixa (totalEntradas/saldo) — quem pagou o quê (mensalistasPagaram, avulsoCount,
  * inadimplentes) continua atribuído à competência em que o lançamento foi de fato registrado.
  */
-export function computeReport(ym: string, transactions: Transaction[], payers: Payer[], config?: Config): MonthlyReport {
+export function computeReport(
+  ym: string,
+  transactions: Transaction[],
+  payers: Payer[],
+  config?: Config,
+  payerTypeChanges: PayerTypeChange[] = [],
+): MonthlyReport {
   const tx = transactions.filter((t) => t.competencia === ym && !t.ignorada);
   const entradas = tx.filter((t) => t.valor > 0);
   const saidas = tx.filter((t) => t.valor < 0);
@@ -81,9 +119,11 @@ export function computeReport(ym: string, transactions: Transaction[], payers: P
     cotas.filter((c) => c.categoria === "AVULSO" && c.payerId).map((c) => c.payerId as string),
   );
   const avulsos = payers.filter((p) => avulsoPayerIds.has(p.id));
-  const inadimplentes = payers.filter(
-    (p) => p.ativo && p.tipo === "MENSALISTA" && (!p.desde || p.desde <= ym) && !mensalistasPagaram.has(p.id),
-  );
+  const inadimplentes = payers.filter((p) => {
+    if (!p.ativo) return false;
+    const { tipo, desde } = resolveTipoEDesde(p, payerTypeChanges, ym);
+    return tipo === "MENSALISTA" && (!desde || desde <= ym) && !mensalistasPagaram.has(p.id);
+  });
 
   const antecipadasSaindo = new Set(entradasAposAntecipacao(transactions, config, ym).map((t) => t.id));
   const antecipadasEntrando = entradasAposAntecipacao(transactions, config, addMonths(ym, -1));

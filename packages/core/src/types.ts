@@ -20,6 +20,13 @@ export interface Payer {
   apelidos: string[];
 }
 
+/** Troca explícita de tipo (mensalista <-> avulso), vigente a partir de uma competência. */
+export interface PayerTypeChange {
+  payerId: string;
+  tipo: PayerType;
+  vigenteDesde: string; // "YYYY-MM"
+}
+
 export interface Share {
   valor: number; // centavos
   categoria: ShareCategory;

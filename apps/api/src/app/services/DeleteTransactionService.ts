@@ -8,7 +8,7 @@ export class DeleteTransactionService {
     private readonly payersRepository: PayersRepository,
   ) {}
 
-  async execute(peladaId: string, id: string): Promise<void> {
+  async execute(peladaId: string, id: string, userId: string): Promise<void> {
     const existing = await this.transactionsRepository.findById(peladaId, id);
     if (!existing) throw new AppError("Lançamento não encontrado", 404);
 
@@ -19,7 +19,13 @@ export class DeleteTransactionService {
       const payer = await this.payersRepository.findById(peladaId, mensalidade.payerId);
       if (payer?.tipo === "MENSALISTA") {
         const desde = await this.transactionsRepository.minMensalidadeCompetencia(mensalidade.payerId);
-        if (desde !== payer.desde) await this.payersRepository.update(mensalidade.payerId, { desde });
+        if (desde !== payer.desde) {
+          await this.payersRepository.update(
+            mensalidade.payerId,
+            { desde },
+            { userId, motivo: "Ajuste automático de lançamento" },
+          );
+        }
       }
     }
   }

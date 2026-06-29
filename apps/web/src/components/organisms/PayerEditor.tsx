@@ -10,7 +10,13 @@ import type { PayerDTO, PayerType } from "@/services/payers";
 
 interface PayerEditorProps {
   initial?: PayerDTO;
-  onSave: (data: { nome: string; tipo: PayerType; telefone: string | null; desde: string | null }) => Promise<void>;
+  onSave: (data: {
+    nome: string;
+    tipo: PayerType;
+    telefone: string | null;
+    desde: string | null;
+    vigenteDesde?: string;
+  }) => Promise<void>;
   onClose: () => void;
 }
 
@@ -19,13 +25,22 @@ export function PayerEditor({ initial, onSave, onClose }: PayerEditorProps) {
   const [tipo, setTipo] = useState<PayerType>(initial?.tipo ?? "MENSALISTA");
   const [telefone, setTelefone] = useState(initial?.telefone ?? "");
   const [desde, setDesde] = useState(initial?.desde ?? "");
+  const [vigenteDesde, setVigenteDesde] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const tipoMudou = !!initial && tipo !== initial.tipo;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      await onSave({ nome, tipo, telefone: telefone || null, desde: tipo === "MENSALISTA" ? desde || null : null });
+      await onSave({
+        nome,
+        tipo,
+        telefone: telefone || null,
+        desde: tipo === "MENSALISTA" ? desde || null : null,
+        vigenteDesde: tipoMudou ? (tipo === "MENSALISTA" ? desde : vigenteDesde) || undefined : undefined,
+      });
     } finally {
       setSaving(false);
     }
@@ -48,6 +63,16 @@ export function PayerEditor({ initial, onSave, onClose }: PayerEditorProps) {
               placeholder={ptBR.pagantes.desde}
               value={desde}
               onChange={(e) => setDesde(e.target.value)}
+              required={tipoMudou}
+            />
+          )}
+          {tipoMudou && tipo === "AVULSO" && (
+            <Input
+              type="month"
+              placeholder={ptBR.pagantes.vigenteDesde}
+              value={vigenteDesde}
+              onChange={(e) => setVigenteDesde(e.target.value)}
+              required
             />
           )}
           <Input

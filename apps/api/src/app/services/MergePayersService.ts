@@ -1,10 +1,13 @@
 import type { PrismaClient } from "@prisma/client";
+import { toTitle } from "@pelada/core";
 import { AppError } from "../utils/AppError";
+import { PayerHistoryRepository } from "../repositories/PayerHistoryRepository";
 
 interface Request {
   peladaId: string;
   targetPayerId: string;
   sourcePayerIds: string[];
+  userId: string;
 }
 
 /**
@@ -27,7 +30,7 @@ export class MergePayersService {
 
       const sources = await tx.payer.findMany({
         where: { id: { in: sourceIds }, peladaId: req.peladaId },
-        include: { aliases: true },
+        include: { aliases: true, typeChanges: true },
       });
       if (sources.length !== sourceIds.length) {
         throw new AppError("Algum pagante de origem não encontrado", 404);
@@ -38,6 +41,11 @@ export class MergePayersService {
       const aliasesNoDestino = new Set(
         (await tx.payerAlias.findMany({ where: { payerId: target.id }, select: { aliasNorm: true } })).map(
           (a) => a.aliasNorm,
+        ),
+      );
+      const vigenciasNoDestino = new Set(
+        (await tx.payerTypeChange.findMany({ where: { payerId: target.id }, select: { vigenteDesde: true } })).map(
+          (c) => c.vigenteDesde,
         ),
       );
 
@@ -54,8 +62,19 @@ export class MergePayersService {
           aliasesNoDestino.add(alias.aliasNorm);
         }
 
+        // histórico de tipo: move o que o destino ainda não tem para a mesma competência; o
+        // que colide some junto com o pagante de origem (cascade em PayerTypeChange).
+        for (const change of source.typeChanges) {
+          if (vigenciasNoDestino.has(change.vigenteDesde)) continue;
+          await tx.payerTypeChange.update({ where: { id: change.id }, data: { payerId: target.id } });
+          vigenciasNoDestino.add(change.vigenteDesde);
+        }
+
         if (source.tipo === "MENSALISTA") tipo = "MENSALISTA";
         if (!telefone && source.telefone) telefone = source.telefone;
+
+        // histórico de edições: vira apêndice do destino (sem checagem de colisão — é só log).
+        await tx.payerHistoryEntry.updateMany({ where: { payerId: source.id }, data: { payerId: target.id } });
 
         await tx.payer.delete({ where: { id: source.id } });
       }
@@ -72,11 +91,22 @@ export class MergePayersService {
         desde = share?.transaction.competencia ?? null;
       }
 
-      return tx.payer.update({
+      const updated = await tx.payer.update({
         where: { id: target.id },
         data: { tipo, telefone, desde },
         include: { aliases: true },
       });
+
+      const nomesOrigem = sources.map((s) => toTitle(s.nome)).join(", ");
+      await new PayerHistoryRepository(tx).recordEdit(
+        target.id,
+        req.userId,
+        target,
+        updated,
+        `Mesclado com ${nomesOrigem}`,
+      );
+
+      return updated;
     });
   }
 }

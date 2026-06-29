@@ -1,5 +1,5 @@
-import { caixaAcumulado, computeReport } from "../src/report";
-import type { Config, Payer, Transaction } from "../src/types";
+import { caixaAcumulado, computeReport, resolveTipoEDesde } from "../src/report";
+import type { Config, Payer, PayerTypeChange, Transaction } from "../src/types";
 
 const danilo: Payer = { id: "danilo", nome: "Danilo Chaves da Cunha", tipo: "MENSALISTA", ativo: true, desde: "2026-04", apelidos: [] };
 const amigo: Payer = { id: "amigo", nome: "Amigo do Danilo", tipo: "MENSALISTA", ativo: true, desde: "2026-04", apelidos: [] };
@@ -242,6 +242,58 @@ describe("computeReport — antecipação da quadra", () => {
     ];
     const report = computeReport("2026-05", transactions, [danilo]);
     expect(report.totalEntradas).toBe(7000);
+  });
+});
+
+describe("resolveTipoEDesde / computeReport com histórico de tipo", () => {
+  it("mensalista que virou avulso: competência anterior à mudança continua MENSALISTA (e inadimplente se não pagou)", () => {
+    const pagante: Payer = { id: "p1", nome: "Pagante", tipo: "AVULSO", ativo: true, desde: null, apelidos: [] };
+    const changes: PayerTypeChange[] = [{ payerId: "p1", tipo: "AVULSO", vigenteDesde: "2026-06" }];
+
+    const antes = resolveTipoEDesde(pagante, changes, "2026-05");
+    expect(antes).toEqual({ tipo: "MENSALISTA", desde: null });
+
+    const depois = resolveTipoEDesde(pagante, changes, "2026-06");
+    expect(depois).toEqual({ tipo: "AVULSO", desde: null });
+
+    const reportAntes = computeReport("2026-05", [], [pagante], undefined, changes);
+    expect(reportAntes.inadimplentes.map((p) => p.id)).toEqual(["p1"]);
+
+    const reportDepois = computeReport("2026-06", [], [pagante], undefined, changes);
+    expect(reportDepois.inadimplentes).toHaveLength(0);
+  });
+
+  it("avulso que virou mensalista: competência anterior à mudança continua AVULSO (nunca inadimplente), a partir da mudança passa a contar", () => {
+    const pagante: Payer = { id: "p2", nome: "Pagante", tipo: "MENSALISTA", ativo: true, desde: "2026-06", apelidos: [] };
+    const changes: PayerTypeChange[] = [{ payerId: "p2", tipo: "MENSALISTA", vigenteDesde: "2026-06" }];
+
+    const antes = resolveTipoEDesde(pagante, changes, "2026-05");
+    expect(antes).toEqual({ tipo: "AVULSO", desde: null });
+
+    const reportAntes = computeReport("2026-05", [], [pagante], undefined, changes);
+    expect(reportAntes.inadimplentes).toHaveLength(0);
+
+    const reportDepois = computeReport("2026-06", [], [pagante], undefined, changes);
+    expect(reportDepois.inadimplentes.map((p) => p.id)).toEqual(["p2"]);
+  });
+
+  it("múltiplas trocas (mensalista -> avulso -> mensalista) resolvem corretamente em cada competência", () => {
+    const pagante: Payer = { id: "p3", nome: "Pagante", tipo: "MENSALISTA", ativo: true, desde: "2026-08", apelidos: [] };
+    const changes: PayerTypeChange[] = [
+      { payerId: "p3", tipo: "AVULSO", vigenteDesde: "2026-06" },
+      { payerId: "p3", tipo: "MENSALISTA", vigenteDesde: "2026-08" },
+    ];
+
+    expect(resolveTipoEDesde(pagante, changes, "2026-05")).toEqual({ tipo: "MENSALISTA", desde: "2026-08" });
+    expect(resolveTipoEDesde(pagante, changes, "2026-06")).toEqual({ tipo: "AVULSO", desde: null });
+    expect(resolveTipoEDesde(pagante, changes, "2026-07")).toEqual({ tipo: "AVULSO", desde: null });
+    expect(resolveTipoEDesde(pagante, changes, "2026-08")).toEqual({ tipo: "MENSALISTA", desde: "2026-08" });
+  });
+
+  it("sem histórico (payerTypeChanges padrão []): comportamento idêntico ao de antes, usa tipo/desde atuais", () => {
+    const pagante: Payer = { id: "p4", nome: "Pagante", tipo: "MENSALISTA", ativo: true, desde: "2026-01", apelidos: [] };
+    const report = computeReport("2026-06", [], [pagante]);
+    expect(report.inadimplentes.map((p) => p.id)).toEqual(["p4"]);
   });
 });
 

@@ -41,13 +41,14 @@ enum MemberRole {
 
 /// Pessoa que faz login (organizador). Pode gerir várias peladas.
 model User {
-  id          String         @id @default(uuid())
-  name        String
-  email       String         @unique
-  password    String
-  memberships PeladaMember[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                  String              @id @default(uuid())
+  name                String
+  email               String              @unique
+  password            String
+  memberships         PeladaMember[]
+  payerHistoryEntries PayerHistoryEntry[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 }
 
 /// A pelada (grupo). Tem nome (parâmetro), config própria e dados escopados.
@@ -107,20 +108,59 @@ model CourtIdentifier {
 
 /// Base de pagantes — escopada por pelada, independente das importações.
 model Payer {
-  id        String       @id @default(uuid())
-  pelada    Pelada       @relation(fields: [peladaId], references: [id], onDelete: Cascade)
-  peladaId  String
-  nome      String
-  tipo      PayerType
-  ativo     Boolean      @default(true)
-  desde     String?      // "YYYY-MM" — só mensalista
-  telefone  String?
-  aliases   PayerAlias[]
-  shares    Share[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id          String              @id @default(uuid())
+  pelada      Pelada              @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId    String
+  nome        String
+  tipo        PayerType
+  ativo       Boolean             @default(true)
+  desde       String?             // "YYYY-MM" — só mensalista
+  telefone    String?
+  aliases     PayerAlias[]
+  shares      Share[]
+  typeChanges PayerTypeChange[]
+  history     PayerHistoryEntry[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
   @@index([peladaId])
+}
+
+enum PayerHistoryAction {
+  CRIACAO
+  EDICAO
+}
+
+/// Log de auditoria do cadastro do pagante: cada criação ou edição (manual ou automática, via
+/// importação/edição de lançamento/mescla) gera uma linha com quem fez, quando, e a lista de
+/// campos alterados (de -> para). Histórico do pagante some se ele for excluído (cascade).
+model PayerHistoryEntry {
+  id         String             @id @default(uuid())
+  payer      Payer              @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  payerId    String
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String?
+  acao       PayerHistoryAction
+  motivo     String? // contexto de origem quando não é edição manual comum, ex.: "Importação de extrato: nome.csv"
+  alteracoes Json // Array<{ campo: string; de: string | null; para: string | null }>
+  createdAt  DateTime           @default(now())
+
+  @@index([payerId])
+}
+
+/// Histórico de trocas de tipo (mensalista <-> avulso). Cada linha registra uma transição
+/// explícita e a competência a partir da qual ela vale — competências anteriores continuam
+/// lendo o tipo que valia antes da troca (mesmo princípio de snapshot do Config, DOMAIN.md §11).
+model PayerTypeChange {
+  id           String    @id @default(uuid())
+  payer        Payer     @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  payerId      String
+  tipo         PayerType
+  vigenteDesde String    // "YYYY-MM"
+  createdAt    DateTime  @default(now())
+
+  @@unique([payerId, vigenteDesde])
+  @@index([payerId])
 }
 
 /// Grafias reconhecidas no extrato. Único POR PELADA: um nome -> um pagante na pelada.

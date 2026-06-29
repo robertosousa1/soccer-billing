@@ -1,12 +1,15 @@
 import type { Response } from "express";
 import { prisma } from "../../database/client";
 import { PayersRepository } from "../repositories/PayersRepository";
+import { PayerHistoryRepository } from "../repositories/PayerHistoryRepository";
 import { ListPayersService } from "../services/ListPayersService";
 import { CreatePayerService } from "../services/CreatePayerService";
 import { UpdatePayerService } from "../services/UpdatePayerService";
 import { DeletePayerService } from "../services/DeletePayerService";
 import { MergePayersService } from "../services/MergePayersService";
 import { PayerMapper } from "../mappers/PayerMapper";
+import { PayerHistoryMapper } from "../mappers/PayerHistoryMapper";
+import { AppError } from "../utils/AppError";
 import type { PeladaScopedRequest } from "../middlewares/ensureMember";
 
 export class PayersController {
@@ -17,14 +20,21 @@ export class PayersController {
   }
 
   async create(req: PeladaScopedRequest, res: Response): Promise<void> {
+    if (!req.userId) throw new AppError("Não autenticado", 401);
     const service = new CreatePayerService(new PayersRepository(prisma));
-    const payer = await service.execute({ peladaId: req.params.peladaId, ...req.body });
+    const payer = await service.execute({ peladaId: req.params.peladaId, ...req.body, userId: req.userId });
     res.status(201).json(PayerMapper.toDTO(payer));
   }
 
   async update(req: PeladaScopedRequest, res: Response): Promise<void> {
+    if (!req.userId) throw new AppError("Não autenticado", 401);
     const service = new UpdatePayerService(new PayersRepository(prisma));
-    const payer = await service.execute({ peladaId: req.params.peladaId, id: req.params.id, ...req.body });
+    const payer = await service.execute({
+      peladaId: req.params.peladaId,
+      id: req.params.id,
+      ...req.body,
+      userId: req.userId,
+    });
     const full = await new PayersRepository(prisma).findById(req.params.peladaId, payer.id);
     res.status(200).json(PayerMapper.toDTO(full!));
   }
@@ -36,12 +46,21 @@ export class PayersController {
   }
 
   async merge(req: PeladaScopedRequest, res: Response): Promise<void> {
+    if (!req.userId) throw new AppError("Não autenticado", 401);
     const service = new MergePayersService(prisma);
     const payer = await service.execute({
       peladaId: req.params.peladaId,
       targetPayerId: req.body.targetPayerId,
       sourcePayerIds: req.body.sourcePayerIds,
+      userId: req.userId,
     });
     res.status(200).json(PayerMapper.toDTO(payer));
+  }
+
+  async history(req: PeladaScopedRequest, res: Response): Promise<void> {
+    const payer = await new PayersRepository(prisma).findById(req.params.peladaId, req.params.id);
+    if (!payer) throw new AppError("Pagante não encontrado", 404);
+    const entries = await new PayerHistoryRepository(prisma).findByPayer(req.params.id);
+    res.status(200).json(entries.map(PayerHistoryMapper.toDTO));
   }
 }

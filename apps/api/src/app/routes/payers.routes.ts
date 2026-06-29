@@ -34,6 +34,8 @@ payersRouter.put(
       ativo: z.boolean().optional(),
       desde: z.string().regex(/^\d{4}-\d{2}$/).nullable().optional(),
       telefone: z.string().nullable().optional(),
+      tipo: z.enum(["MENSALISTA", "AVULSO"]).optional(),
+      vigenteDesde: z.string().regex(/^\d{4}-\d{2}$/).optional(),
     }),
   }),
   (req, res, next) => payersController.update(req, res).catch(next),
@@ -57,6 +59,10 @@ payersRouter.post(
 
 payersRouter.get("/:id/charge-message", authorize("WRITE"), (req, res, next) =>
   reportsController.chargeMessage(req, res).catch(next),
+);
+
+payersRouter.get("/:id/history", authorize("READ"), (req, res, next) =>
+  payersController.history(req, res).catch(next),
 );
 
 export { payersRouter };

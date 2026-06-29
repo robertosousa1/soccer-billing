@@ -11,6 +11,7 @@ interface Request {
   competencia?: string;
   outflowCategory?: "QUADRA" | "OUTRA_SAIDA";
   ignorada?: boolean;
+  userId: string;
 }
 
 export class UpdateTransactionService {
@@ -57,7 +58,7 @@ export class UpdateTransactionService {
       // se ela mudou (ou o lançamento passou a ser ignorado), `desde` precisa acompanhar.
       if (req.competencia !== undefined || req.ignorada !== undefined) {
         const mensalidade = existing.shares.find((s) => s.categoria === "MENSALIDADE" && s.payerId);
-        if (mensalidade?.payerId) await this.syncPayerDesde(req.peladaId, mensalidade.payerId);
+        if (mensalidade?.payerId) await this.syncPayerDesde(req.peladaId, mensalidade.payerId, req.userId);
       }
 
       return updated;
@@ -69,10 +70,12 @@ export class UpdateTransactionService {
     }
   }
 
-  private async syncPayerDesde(peladaId: string, payerId: string): Promise<void> {
+  private async syncPayerDesde(peladaId: string, payerId: string, userId: string): Promise<void> {
     const payer = await this.payersRepository.findById(peladaId, payerId);
     if (!payer || payer.tipo !== "MENSALISTA") return;
     const desde = await this.transactionsRepository.minMensalidadeCompetencia(payerId);
-    if (desde !== payer.desde) await this.payersRepository.update(payerId, { desde });
+    if (desde !== payer.desde) {
+      await this.payersRepository.update(payerId, { desde }, { userId, motivo: "Ajuste automático de lançamento" });
+    }
   }
 }

@@ -4,19 +4,28 @@ import {
   competenciaPeriodo,
   computeReport,
   formatBRL,
+  resolveTipoEDesde,
   type Config as CoreConfig,
   type Payer as CorePayer,
+  type PayerTypeChange as CorePayerTypeChange,
   type Transaction as CoreTransaction,
 } from "@pelada/core";
 import { prisma } from "../../database/client";
 
 export class GetMonthlyReportService {
   async execute(peladaId: string, competencia: string) {
-    const [config, allTx, payers] = await Promise.all([
+    const [config, allTx, payers, typeChanges] = await Promise.all([
       prisma.config.findUnique({ where: { peladaId } }),
       prisma.transaction.findMany({ where: { peladaId }, include: { shares: true } }),
       prisma.payer.findMany({ where: { peladaId } }),
+      prisma.payerTypeChange.findMany({ where: { payer: { peladaId } } }),
     ]);
+
+    const corePayerTypeChanges: CorePayerTypeChange[] = typeChanges.map((c) => ({
+      payerId: c.payerId,
+      tipo: c.tipo,
+      vigenteDesde: c.vigenteDesde,
+    }));
 
     const coreConfig: CoreConfig | undefined = config
       ? {
@@ -57,7 +66,7 @@ export class GetMonthlyReportService {
       apelidos: [],
     }));
 
-    const report = computeReport(competencia, coreTx, corePayers, coreConfig);
+    const report = computeReport(competencia, coreTx, corePayers, coreConfig, corePayerTypeChanges);
     // caixa no início = acumulado até a competência anterior (o que já estava em caixa antes desta);
     // caixa no final = acumulado incluindo esta competência.
     const caixaInicial = caixaAcumulado(addMonths(competencia, -1), coreTx, corePayers, coreConfig);
@@ -86,7 +95,11 @@ export class GetMonthlyReportService {
         valorReferencia: config ? formatBRL(config.valorAluguel) : null,
       },
       mensalistas: corePayers
-        .filter((p) => p.tipo === "MENSALISTA" && p.ativo && (!p.desde || p.desde <= competencia))
+        .filter((p) => {
+          if (!p.ativo) return false;
+          const { tipo, desde } = resolveTipoEDesde(p, corePayerTypeChanges, competencia);
+          return tipo === "MENSALISTA" && (!desde || desde <= competencia);
+        })
         .map((p) => ({
           id: p.id,
           nome: p.nome,

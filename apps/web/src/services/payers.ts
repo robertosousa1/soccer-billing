@@ -29,7 +29,14 @@ export function updatePayer(
   token: string,
   peladaId: string,
   id: string,
-  data: { nome?: string; ativo?: boolean; desde?: string | null; telefone?: string | null },
+  data: {
+    nome?: string;
+    ativo?: boolean;
+    desde?: string | null;
+    telefone?: string | null;
+    tipo?: PayerType;
+    vigenteDesde?: string;
+  },
 ) {
   return apiFetch<PayerDTO>(`/peladas/${peladaId}/payers/${id}`, { method: "PUT", token, body: data });
 }
@@ -44,6 +51,26 @@ export function mergePayers(token: string, peladaId: string, targetPayerId: stri
     token,
     body: { targetPayerId, sourcePayerIds },
   });
+}
+
+export interface PayerFieldChange {
+  campo: string;
+  de: string | null;
+  para: string | null;
+}
+
+export interface PayerHistoryEntryDTO {
+  id: string;
+  acao: "CRIACAO" | "EDICAO";
+  motivo: string | null;
+  alteracoes: PayerFieldChange[];
+  usuario: string;
+  data: string;
+  hora: string;
+}
+
+export function getPayerHistory(token: string, peladaId: string, payerId: string) {
+  return apiFetch<PayerHistoryEntryDTO[]>(`/peladas/${peladaId}/payers/${payerId}/history`, { token });
 }
 
 export function getChargeMessage(token: string, peladaId: string, payerId: string, competencia: string) {

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, GitMerge } from "lucide-react";
+import { Pencil, Trash2, GitMerge, History } from "lucide-react";
 import { toTitle } from "@pelada/core";
 import { PageShell } from "@/components/templates/PageShell";
 import { Badge } from "@/components/atoms/Badge";
 import { Button } from "@/components/atoms/Button";
 import { PayerEditor } from "@/components/organisms/PayerEditor";
 import { MergePayersModal } from "@/components/organisms/MergePayersModal";
+import { PayerHistoryModal } from "@/components/organisms/PayerHistoryModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePelada } from "@/contexts/PeladaContext";
 import { createPayer, deletePayer, listPayers, updatePayer, type PayerDTO } from "@/services/payers";
@@ -21,6 +22,7 @@ export default function PagantesPage() {
   const [editing, setEditing] = useState<PayerDTO | "new" | null>(null);
   const [deleting, setDeleting] = useState<PayerDTO | null>(null);
   const [merging, setMerging] = useState<PayerDTO | null>(null);
+  const [viewingHistory, setViewingHistory] = useState<PayerDTO | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function reload() {
@@ -40,7 +42,13 @@ export default function PagantesPage() {
 
   const semWhatsapp = payers.filter((p) => p.tipo === "MENSALISTA" && p.ativo && !p.telefone).length;
 
-  async function handleSave(data: { nome: string; tipo: PayerDTO["tipo"]; telefone: string | null; desde: string | null }) {
+  async function handleSave(data: {
+    nome: string;
+    tipo: PayerDTO["tipo"];
+    telefone: string | null;
+    desde: string | null;
+    vigenteDesde?: string;
+  }) {
     if (!token || !current) return;
     if (editing === "new") {
       await createPayer(token, current.id, data);
@@ -105,6 +113,16 @@ export default function PagantesPage() {
                       variant="ghost"
                       size="sm"
                       className="!px-2"
+                      title={ptBR.pagantes.historico}
+                      aria-label={ptBR.pagantes.historico}
+                      onClick={() => setViewingHistory(p)}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="!px-2"
                       title={ptBR.pagantes.mesclarTitulo}
                       aria-label={ptBR.pagantes.mesclarTitulo}
                       onClick={() => setMerging(p)}
@@ -154,6 +172,15 @@ export default function PagantesPage() {
           initialPayerId={merging.id}
           onMerged={reload}
           onClose={() => setMerging(null)}
+        />
+      )}
+
+      {viewingHistory && token && current && (
+        <PayerHistoryModal
+          token={token}
+          peladaId={current.id}
+          payer={viewingHistory}
+          onClose={() => setViewingHistory(null)}
         />
       )}
 

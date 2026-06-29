@@ -31,6 +31,11 @@ function createFakePrisma() {
       updateMany: jest.fn(async () => ({ count: 0 })),
     },
     payer: {
+      findUniqueOrThrow: jest.fn(async ({ where }: { where: { id: string } }) => {
+        const payer = payers.get(where.id);
+        if (!payer) throw new Error("payer não encontrado no fake");
+        return payer;
+      }),
       create: jest.fn(
         async ({
           data,
@@ -82,6 +87,9 @@ function createFakePrisma() {
         return importRecord;
       }),
     },
+    payerHistoryEntry: {
+      create: jest.fn(async () => ({})),
+    },
   };
 
   type FakeTx = typeof tx;
@@ -112,7 +120,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
       ],
     };
 
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas: [linha] });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas: [linha] });
 
     expect(payers.size).toBe(2);
     const danilo = [...payers.values()].find((p) => p.nome === "Danilo Chaves da Cunha")!;
@@ -156,7 +164,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
       },
     ];
 
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas });
 
     // duas linhas, grafias diferentes, mesma pessoa -> 1 único pagante criado
     expect(payers.size).toBe(1);
@@ -191,7 +199,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
       },
     ];
 
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas });
 
     expect(payers.size).toBe(1);
     const danilo = [...payers.values()][0]!;
@@ -230,7 +238,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
     ];
 
     await expect(
-      service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas }),
+      service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas }),
     ).rejects.toThrow("Nenhum lançamento novo para confirmar");
     expect(transactions).toHaveLength(0);
   });
@@ -255,7 +263,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
     };
 
     await expect(
-      service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas: [linha] }),
+      service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas: [linha] }),
     ).rejects.toThrow(/Contribuição/);
     expect(transactions).toHaveLength(0);
   });
@@ -279,7 +287,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
       ],
     };
 
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas: [linha] });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas: [linha] });
     expect(transactions).toHaveLength(1);
   });
 
@@ -299,7 +307,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
       outflowCategory: "QUADRA",
     };
 
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas: [linha] });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas: [linha] });
 
     expect(payers.size).toBe(0);
     expect(transactions).toHaveLength(1);
@@ -323,7 +331,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
       ],
     };
 
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas: [linha] });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas: [linha] });
 
     const fulano = [...payers.values()][0]!;
     expect(fulano.telefone).toBe("11999998888");
@@ -344,7 +352,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
       duplicada: false,
       shares: [{ valor: 7000, categoria: "MENSALIDADE", ordem: 0, payerId: null, nome: "Danilo Chaves da Cunha" }],
     };
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h1", linhas: [linhaCriaPagante] });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h1", linhas: [linhaCriaPagante] });
 
     const danilo = [...payers.values()][0]!;
     expect(danilo.telefone).toBeNull();
@@ -362,7 +370,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
         { valor: 7000, categoria: "MENSALIDADE", ordem: 0, payerId: danilo.id, nome: "Danilo Chaves da Cunha", telefone: "11988887777" },
       ],
     };
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h2", linhas: [linhaComTelefone] });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h2", linhas: [linhaComTelefone] });
     expect(danilo.telefone).toBe("11988887777");
 
     const linhaTentaSobrescrever: ImportLineDraft = {
@@ -378,7 +386,7 @@ describe("ConfirmReconciliationService — regras-bug (DOMAIN.md §13)", () => {
         { valor: 7000, categoria: "MENSALIDADE", ordem: 0, payerId: danilo.id, nome: "Danilo Chaves da Cunha", telefone: "11900000000" },
       ],
     };
-    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", hash: "h3", linhas: [linhaTentaSobrescrever] });
+    await service.execute({ peladaId: "p1", nomeArquivo: "extrato.csv", userId: "u1", hash: "h3", linhas: [linhaTentaSobrescrever] });
     expect(danilo.telefone).toBe("11988887777");
   });
 });

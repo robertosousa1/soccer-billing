@@ -7,6 +7,7 @@ import { ListTransactionsService } from "../services/ListTransactionsService";
 import { DeleteTransactionService } from "../services/DeleteTransactionService";
 import { CreateTransactionService } from "../services/CreateTransactionService";
 import { TransactionMapper } from "../mappers/TransactionMapper";
+import { AppError } from "../utils/AppError";
 import type { PeladaScopedRequest } from "../middlewares/ensureMember";
 
 export class TransactionsController {
@@ -23,18 +24,21 @@ export class TransactionsController {
   }
 
   async update(req: PeladaScopedRequest, res: Response): Promise<void> {
+    if (!req.userId) throw new AppError("Não autenticado", 401);
     const service = new UpdateTransactionService(new TransactionsRepository(prisma), new PayersRepository(prisma));
     const transaction = await service.execute({
       peladaId: req.params.peladaId,
       id: req.params.id,
       ...req.body,
+      userId: req.userId,
     });
     res.status(200).json(transaction);
   }
 
   async destroy(req: PeladaScopedRequest, res: Response): Promise<void> {
+    if (!req.userId) throw new AppError("Não autenticado", 401);
     const service = new DeleteTransactionService(new TransactionsRepository(prisma), new PayersRepository(prisma));
-    await service.execute(req.params.peladaId, req.params.id);
+    await service.execute(req.params.peladaId, req.params.id, req.userId);
     res.status(204).send();
   }
 }

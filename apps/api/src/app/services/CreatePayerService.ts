@@ -10,6 +10,7 @@ interface Request {
   tipo: PayerType;
   desde?: string | null;
   telefone?: string | null;
+  userId: string;
 }
 
 export class CreatePayerService {
@@ -21,13 +22,16 @@ export class CreatePayerService {
     });
     if (existingAlias) throw new AppError("Já existe um pagante com este nome/apelido na pelada", 409);
 
-    return this.payersRepository.create({
-      peladaId: req.peladaId,
-      nome: req.nome,
-      tipo: req.tipo,
-      desde: req.tipo === "MENSALISTA" ? req.desde ?? null : null,
-      telefone: req.telefone ?? null,
-      apelidos: [req.nome],
-    });
+    return this.payersRepository.create(
+      {
+        peladaId: req.peladaId,
+        nome: req.nome,
+        tipo: req.tipo,
+        desde: req.tipo === "MENSALISTA" ? req.desde ?? null : null,
+        telefone: req.telefone ?? null,
+        apelidos: [req.nome],
+      },
+      { userId: req.userId },
+    );
   }
 }

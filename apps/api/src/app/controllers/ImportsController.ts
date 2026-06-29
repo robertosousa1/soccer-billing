@@ -24,6 +24,7 @@ export class ImportsController {
   }
 
   async confirm(req: PeladaScopedRequest, res: Response): Promise<void> {
+    if (!req.userId) throw new AppError("Não autenticado", 401);
     const { linhas, hash, rawFileKey, nomeArquivo } = req.body;
     const service = new ConfirmReconciliationService(prisma);
     const result = await service.execute({
@@ -32,6 +33,7 @@ export class ImportsController {
       hash,
       rawFileKey,
       linhas,
+      userId: req.userId,
     });
     res.status(201).json(result);
   }

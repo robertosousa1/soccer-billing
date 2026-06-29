@@ -132,9 +132,10 @@ Efeitos no relatório:
 
 ## 9. Inadimplência
 
-Para um mês `M`: inadimplente = pagante **ativo**, tipo **mensalista**, com `desde <= M`,
-**sem** nenhuma cota de mensalidade atribuída a ele em `M`. (Não depende de valor — quem
-pagou mensalidade conta como pago, mesmo que o preço tenha mudado.)
+Para um mês `M`: inadimplente = pagante **ativo**, tipo **mensalista** (resolvido para a
+competência `M` — ver §11.1, não o tipo atual do cadastro), com `desde <= M` (idem), **sem**
+nenhuma cota de mensalidade atribuída a ele em `M`. (Não depende de valor — quem pagou
+mensalidade conta como pago, mesmo que o preço tenha mudado.)
 
 ## 10. Relatório mensal
 
@@ -157,6 +158,30 @@ identificadores da quadra **não altera meses já lançados**. Cada lançamento 
 real e a categoria do momento. Config afeta apenas: (a) o palpite em importações futuras e
 (b) rótulos de referência na tela. Implementação: nunca derive números históricos da config;
 sempre dos registros salvos.
+
+## 11.1. Tipo do pagante também é snapshot por competência
+
+Mesmo princípio do §11, aplicado a `Payer.tipo`/`desde`: quando um mensalista vira avulso (ou
+vice-versa), a mudança **não pode alterar a leitura de competências já lançadas** — só vale a
+partir da competência escolhida pelo usuário (e segue valendo nas seguintes, até a próxima
+troca, se houver).
+
+- Tabela `PayerTypeChange` registra só **trocas explícitas**: `{ payerId, tipo, vigenteDesde
+  ("YYYY-MM") }`. Pagante que nunca trocou de tipo não tem nenhuma linha — comportamento
+  idêntico ao de sempre (usa `Payer.tipo`/`desde` direto).
+- **Resolução** (`resolveTipoEDesde(payer, changes, ym)` em `packages/core`): pega a troca mais
+  recente com `vigenteDesde <= ym`. Se existir, usa o `tipo` dela (e `desde = vigenteDesde` se
+  tornou mensalista, `null` se tornou avulso). Se `ym` for anterior a **todas** as trocas
+  registradas, o tipo nessa competência é o **oposto** da troca mais antiga (só existem dois
+  valores possíveis, então a troca mais antiga revela o que era antes dela). Sem nenhuma troca,
+  cai no `tipo`/`desde` atuais do cadastro.
+- Editar o tipo de um pagante (`PUT /payers/:id` com `tipo` diferente do atual) **exige**
+  informar `vigenteDesde` — o usuário escolhe manualmente a competência, nunca é assumido "o
+  mês atual" automaticamente. O sistema suporta histórico completo: um pagante pode trocar de
+  tipo mais de uma vez na vida (mensalista → avulso → mensalista → ...).
+- `computeReport()` e a lista de mensalistas do relatório mensal usam essa resolução por
+  competência, não `payer.tipo`/`payer.desde` direto — é a mesma função em ambos os lugares,
+  para não divergirem de novo.
 
 ## 12. WhatsApp (presente e futuro)
 

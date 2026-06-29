@@ -1,6 +1,7 @@
 import { linhaNeedsSplitNames, normalizeName, type ImportLineDraft, type ImportShareDraft } from "@pelada/core";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { AppError } from "../utils/AppError";
+import { PayerHistoryRepository } from "../repositories/PayerHistoryRepository";
 
 interface Request {
   peladaId: string;
@@ -8,6 +9,7 @@ interface Request {
   hash: string;
   rawFileKey?: string | null;
   linhas: ImportLineDraft[];
+  userId: string;
 }
 
 interface BatchPayer {
@@ -70,6 +72,8 @@ export class ConfirmReconciliationService {
             nomeOriginal: linha.nomeOriginal,
             competencia: linha.competencia,
             novosPorNome,
+            userId: req.userId,
+            motivo: `Importação de extrato: ${req.nomeArquivo}`,
           });
           sharesData.push({
             valor: share.valor,
@@ -124,16 +128,18 @@ export class ConfirmReconciliationService {
     nomeOriginal: string;
     competencia: string;
     novosPorNome: Map<string, BatchPayer>;
+    userId: string;
+    motivo: string;
   }): Promise<string | null> {
-    const { tx, peladaId, share, nomeOriginal, competencia, novosPorNome } = params;
+    const { tx, peladaId, share, nomeOriginal, competencia, novosPorNome, userId, motivo } = params;
 
     // já tem paganteId resolvido (pagante existente reconhecido por apelido/nome)
     if (share.payerId) {
       if (share.ordem === 0) {
         await this.addAliasIfMissing(tx, peladaId, share.payerId, nomeOriginal);
-        await this.bumpDesdeIfEarlier(tx, share.payerId, competencia);
+        await this.bumpDesdeIfEarlier(tx, share.payerId, competencia, userId, motivo);
       }
-      await this.bumpTelefoneIfMissing(tx, share.payerId, share.telefone);
+      await this.bumpTelefoneIfMissing(tx, share.payerId, share.telefone, userId, motivo);
       return share.payerId;
     }
 
@@ -144,10 +150,12 @@ export class ConfirmReconciliationService {
     const reaproveitado = novosPorNome.get(key);
     if (reaproveitado) {
       if (reaproveitado.tipo === "MENSALISTA" && competencia < (reaproveitado.desde ?? competencia)) {
+        const before = await tx.payer.findUniqueOrThrow({ where: { id: reaproveitado.id } });
         reaproveitado.desde = competencia;
-        await tx.payer.update({ where: { id: reaproveitado.id }, data: { desde: competencia } });
+        const after = await tx.payer.update({ where: { id: reaproveitado.id }, data: { desde: competencia } });
+        await new PayerHistoryRepository(tx).recordEdit(reaproveitado.id, userId, before, after, motivo);
       }
-      await this.bumpTelefoneIfMissing(tx, reaproveitado.id, share.telefone);
+      await this.bumpTelefoneIfMissing(tx, reaproveitado.id, share.telefone, userId, motivo);
       return reaproveitado.id;
     }
 
@@ -170,6 +178,7 @@ export class ConfirmReconciliationService {
         },
       },
     });
+    await new PayerHistoryRepository(tx).recordCreation(created.id, userId, created, motivo);
 
     novosPorNome.set(key, { id: created.id, tipo: created.tipo, desde: created.desde });
     return created.id;
@@ -191,23 +200,29 @@ export class ConfirmReconciliationService {
     tx: Prisma.TransactionClient,
     payerId: string,
     competencia: string,
+    userId: string,
+    motivo: string,
   ): Promise<void> {
     const payer = await tx.payer.findUnique({ where: { id: payerId } });
     if (!payer || payer.tipo !== "MENSALISTA") return;
     if (!payer.desde || competencia < payer.desde) {
-      await tx.payer.update({ where: { id: payerId }, data: { desde: competencia } });
+      const after = await tx.payer.update({ where: { id: payerId }, data: { desde: competencia } });
+      await new PayerHistoryRepository(tx).recordEdit(payerId, userId, payer, after, motivo);
     }
   }
 
   private async bumpTelefoneIfMissing(
     tx: Prisma.TransactionClient,
     payerId: string,
-    telefone?: string | null,
+    telefone: string | null | undefined,
+    userId: string,
+    motivo: string,
   ): Promise<void> {
     const tel = telefone?.trim();
     if (!tel) return;
     const payer = await tx.payer.findUnique({ where: { id: payerId } });
     if (!payer || payer.telefone) return;
-    await tx.payer.update({ where: { id: payerId }, data: { telefone: tel } });
+    const after = await tx.payer.update({ where: { id: payerId }, data: { telefone: tel } });
+    await new PayerHistoryRepository(tx).recordEdit(payerId, userId, payer, after, motivo);
   }
 }
