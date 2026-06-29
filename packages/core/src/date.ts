@@ -40,3 +40,16 @@ export function addMonths(ym: string, delta: number): string {
   const nm = (((total % 12) + 12) % 12) + 1;
   return `${ny}-${String(nm).padStart(2, "0")}`;
 }
+
+/**
+ * Primeiro e último dia (calendário) de uma competência "YYYY-MM", como "YYYY-MM-DD".
+ * Usa `new Date(ano, mes, 0)` (argumentos numéricos, não parsing de string) pra pegar o
+ * último dia do mês sem cair no bug de fuso-horário do `new Date("YYYY-MM-DD")`.
+ */
+export function competenciaPeriodo(ym: string): { inicio: string; fim: string } {
+  const [y, m] = ym.split("-").map(Number);
+  const inicio = `${ym}-01`;
+  const ultimoDia = new Date(y as number, m as number, 0).getDate();
+  const fim = `${ym}-${String(ultimoDia).padStart(2, "0")}`;
+  return { inicio, fim };
+}

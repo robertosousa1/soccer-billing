@@ -1,7 +1,8 @@
-import { apiFetch } from "./api";
+import { apiFetch, ApiError } from "./api";
 
 export interface MonthlyReportDTO {
   competencia: string;
+  periodo: { inicio: string; fim: string };
   entrou: string;
   saiu: string;
   saldo: string;
@@ -17,6 +18,7 @@ export interface MonthlyReportDTO {
   };
   mensalistas: { id: string; nome: string; pago: boolean; telefone: string | null }[];
   avulsoCount: number;
+  avulsos: { id: string; nome: string; telefone: string | null }[];
   inadimplentes: { id: string; nome: string; telefone: string | null }[];
 }
 
@@ -29,4 +31,26 @@ export function getCompetenciaRange(token: string, peladaId: string) {
     `/peladas/${peladaId}/reports/competencia-range`,
     { token },
   );
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
+
+/** Baixa o PDF do resumo da competência. Faz fetch próprio (não usa apiFetch, que sempre espera JSON). */
+export async function exportMonthlyReportPdf(token: string, peladaId: string, competencia: string): Promise<void> {
+  const res = await fetch(`${API_URL}/peladas/${peladaId}/reports/${competencia}/pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.message ?? "Erro inesperado", res.status);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `resumo-${competencia}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

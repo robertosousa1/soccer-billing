@@ -17,4 +17,8 @@ reportsRouter.get("/:competencia/defaulters", authorize("READ"), (req, res, next
   reportsController.defaulters(req, res).catch(next),
 );
 
+reportsRouter.get("/:competencia/pdf", authorize("READ"), (req, res, next) =>
+  reportsController.pdf(req, res).catch(next),
+);
+
 export { reportsRouter };

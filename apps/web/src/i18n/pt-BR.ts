@@ -40,6 +40,9 @@ export const ptBR = {
     semDados: "Sem lançamentos nesta competência ainda.",
     mes: "Competência",
     irPara: "Ir para {mes}",
+    exportar: "Exportar",
+    exportando: "Gerando PDF...",
+    erroExportar: "Não foi possível gerar o PDF.",
   },
   situacao: { pago: "Pago", emAberto: "Em aberto" },
   importar: {

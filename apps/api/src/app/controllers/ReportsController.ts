@@ -3,6 +3,7 @@ import { prisma } from "../../database/client";
 import { GetMonthlyReportService } from "../services/GetMonthlyReportService";
 import { ListDefaultersService } from "../services/ListDefaultersService";
 import { BuildChargeMessageService } from "../services/BuildChargeMessageService";
+import { BuildMonthlyReportPdfService } from "../services/BuildMonthlyReportPdfService";
 import { PayersRepository } from "../repositories/PayersRepository";
 import { ConfigRepository } from "../repositories/ConfigRepository";
 import { TransactionsRepository } from "../repositories/TransactionsRepository";
@@ -18,6 +19,13 @@ export class ReportsController {
     const service = new GetMonthlyReportService();
     const report = await service.execute(req.params.peladaId, req.params.competencia);
     res.status(200).json(report);
+  }
+
+  async pdf(req: PeladaScopedRequest, res: Response): Promise<void> {
+    const buffer = await new BuildMonthlyReportPdfService().execute(req.params.peladaId, req.params.competencia);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="resumo-${req.params.competencia}.pdf"`);
+    res.status(200).send(buffer);
   }
 
   async defaulters(req: PeladaScopedRequest, res: Response): Promise<void> {

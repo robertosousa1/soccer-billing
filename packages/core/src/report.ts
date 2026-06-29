@@ -9,6 +9,7 @@ export interface MonthlyReport {
   quadraPaga: boolean;
   mensalistasPagaram: Set<string>;
   avulsoCount: number;
+  avulsos: Payer[];
   inadimplentes: Payer[];
 }
 
@@ -76,6 +77,10 @@ export function computeReport(ym: string, transactions: Transaction[], payers: P
     cotas.filter((c) => c.categoria === "MENSALIDADE" && c.payerId).map((c) => c.payerId as string),
   );
   const avulsoCount = cotas.filter((c) => c.categoria === "AVULSO").length;
+  const avulsoPayerIds = new Set(
+    cotas.filter((c) => c.categoria === "AVULSO" && c.payerId).map((c) => c.payerId as string),
+  );
+  const avulsos = payers.filter((p) => avulsoPayerIds.has(p.id));
   const inadimplentes = payers.filter(
     (p) => p.ativo && p.tipo === "MENSALISTA" && (!p.desde || p.desde <= ym) && !mensalistasPagaram.has(p.id),
   );
@@ -94,6 +99,7 @@ export function computeReport(ym: string, transactions: Transaction[], payers: P
     quadraPaga: quadra.length > 0,
     mensalistasPagaram,
     avulsoCount,
+    avulsos,
     inadimplentes,
   };
 }

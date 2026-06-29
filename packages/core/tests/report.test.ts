@@ -54,6 +54,57 @@ describe("computeReport", () => {
     expect(report.avulsoCount).toBe(2);
   });
 
+  it("avulsos: lista os pagantes distintos de cotas AVULSO no mês, sem duplicar quem pagou mais de uma cota", () => {
+    const fulano: Payer = { id: "fulano", nome: "Fulano Avulso", tipo: "AVULSO", ativo: true, apelidos: [] };
+    const ciclano: Payer = { id: "ciclano", nome: "Ciclano Avulso", tipo: "AVULSO", ativo: true, apelidos: [] };
+    const transactions: Transaction[] = [
+      {
+        id: "t1",
+        data: "2026-04-12",
+        hora: "11:00",
+        nomeOriginal: "Fulano Avulso",
+        valor: 6000,
+        competencia: "2026-04",
+        chaveNatural: "k2",
+        shares: [
+          { valor: 3000, categoria: "AVULSO", payerId: "fulano", ordem: 0 },
+          { valor: 3000, categoria: "AVULSO", payerId: "fulano", ordem: 1 },
+        ],
+      },
+      {
+        id: "t2",
+        data: "2026-04-13",
+        hora: "11:00",
+        nomeOriginal: "Ciclano Avulso",
+        valor: 3000,
+        competencia: "2026-04",
+        chaveNatural: "k3",
+        shares: [{ valor: 3000, categoria: "AVULSO", payerId: "ciclano", ordem: 0 }],
+      },
+    ];
+    const report = computeReport("2026-04", transactions, [fulano, ciclano]);
+    expect(report.avulsoCount).toBe(3);
+    expect(report.avulsos.map((p) => p.id).sort()).toEqual(["ciclano", "fulano"]);
+  });
+
+  it("avulsos: cota AVULSO sem payerId não aparece na lista (mas conta em avulsoCount)", () => {
+    const transactions: Transaction[] = [
+      {
+        id: "t1",
+        data: "2026-04-12",
+        hora: "11:00",
+        nomeOriginal: "Avulso Não Identificado",
+        valor: 3000,
+        competencia: "2026-04",
+        chaveNatural: "k2",
+        shares: [{ valor: 3000, categoria: "AVULSO", payerId: null, ordem: 0 }],
+      },
+    ];
+    const report = computeReport("2026-04", transactions, []);
+    expect(report.avulsoCount).toBe(1);
+    expect(report.avulsos).toHaveLength(0);
+  });
+
   it("cenário 5: saídas QUADRA somam no totalQuadra e marcam quadraPaga", () => {
     const transactions: Transaction[] = [
       { id: "s1", data: "2026-05-05", hora: "09:00", nomeOriginal: "IMPACTO ARENA SOCIETY LTDA", valor: -93000, competencia: "2026-05", chaveNatural: "k3", outflowCategory: "QUADRA" },

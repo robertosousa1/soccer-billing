@@ -1,6 +1,7 @@
 import {
   addMonths,
   caixaAcumulado,
+  competenciaPeriodo,
   computeReport,
   formatBRL,
   type Config as CoreConfig,
@@ -70,6 +71,7 @@ export class GetMonthlyReportService {
 
     return {
       competencia,
+      periodo: competenciaPeriodo(competencia),
       entrou: formatBRL(report.totalEntradas),
       saiu: formatBRL(report.totalSaidas),
       saldo: formatBRL(report.saldo),
@@ -92,6 +94,7 @@ export class GetMonthlyReportService {
           telefone: p.telefone,
         })),
       avulsoCount: report.avulsoCount,
+      avulsos: report.avulsos.map((p) => ({ id: p.id, nome: p.nome, telefone: p.telefone })),
       inadimplentes: report.inadimplentes.map((p) => ({ id: p.id, nome: p.nome, telefone: p.telefone })),
     };
   }

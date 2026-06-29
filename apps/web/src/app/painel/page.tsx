@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Download } from "lucide-react";
 import { addMonths, ymOf } from "@pelada/core";
 import { PageShell } from "@/components/templates/PageShell";
 import { Scoreboard } from "@/components/organisms/Scoreboard";
@@ -12,7 +12,7 @@ import { MensalistasTable } from "@/components/organisms/MensalistasTable";
 import { Input } from "@/components/atoms/Input";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePelada } from "@/contexts/PeladaContext";
-import { getMonthlyReport, getCompetenciaRange, type MonthlyReportDTO } from "@/services/reports";
+import { getMonthlyReport, getCompetenciaRange, exportMonthlyReportPdf, type MonthlyReportDTO } from "@/services/reports";
 import { ptBR, interpolate } from "@/i18n/pt-BR";
 import { mesLabel } from "@/lib/competencia";
 
@@ -23,6 +23,21 @@ export default function PainelPage() {
   const [report, setReport] = useState<MonthlyReportDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [range, setRange] = useState<{ min: string | null; max: string | null }>({ min: null, max: null });
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(false);
+
+  async function handleExport() {
+    if (!token || !current) return;
+    setExporting(true);
+    setExportError(false);
+    try {
+      await exportMonthlyReportPdf(token, current.id, competencia);
+    } catch {
+      setExportError(true);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     if (!token || !current) return;
@@ -42,43 +57,51 @@ export default function PainelPage() {
 
   return (
     <PageShell>
-      <div className="mb-5 flex items-center gap-3">
-        <label className="text-sm font-semibold text-muted">{ptBR.painel.mes}</label>
-        <div className="flex items-center gap-1">
-          <Input
-            type="month"
-            value={competencia}
-            onChange={(e) => setCompetencia(e.target.value)}
-            min={range.min ?? undefined}
-            max={range.max ?? undefined}
-            className="w-40"
-          />
-          <div className="flex flex-col gap-0.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="!px-1.5 !py-0.5"
-              disabled={!podeAvancar}
-              title={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, 1)) })}
-              aria-label={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, 1)) })}
-              onClick={() => setCompetencia(addMonths(competencia, 1))}
-            >
-              <ChevronUp className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="!px-1.5 !py-0.5"
-              disabled={!podeVoltar}
-              title={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, -1)) })}
-              aria-label={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, -1)) })}
-              onClick={() => setCompetencia(addMonths(competencia, -1))}
-            >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-semibold text-muted">{ptBR.painel.mes}</label>
+          <div className="flex items-center gap-1">
+            <Input
+              type="month"
+              value={competencia}
+              onChange={(e) => setCompetencia(e.target.value)}
+              min={range.min ?? undefined}
+              max={range.max ?? undefined}
+              className="w-40"
+            />
+            <div className="flex flex-col gap-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="!px-1.5 !py-0.5"
+                disabled={!podeAvancar}
+                title={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, 1)) })}
+                aria-label={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, 1)) })}
+                onClick={() => setCompetencia(addMonths(competencia, 1))}
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="!px-1.5 !py-0.5"
+                disabled={!podeVoltar}
+                title={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, -1)) })}
+                aria-label={interpolate(ptBR.painel.irPara, { mes: mesLabel(addMonths(competencia, -1)) })}
+                onClick={() => setCompetencia(addMonths(competencia, -1))}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
+        <Button variant="default" size="sm" loading={exporting} disabled={!report} onClick={handleExport}>
+          <Download className="h-4 w-4" />
+          {exporting ? ptBR.painel.exportando : ptBR.painel.exportar}
+        </Button>
       </div>
+
+      {exportError && <AlertBanner tone="warn">{ptBR.painel.erroExportar}</AlertBanner>}
 
       {loading && <p className="text-sm text-muted">Carregando...</p>}
 
