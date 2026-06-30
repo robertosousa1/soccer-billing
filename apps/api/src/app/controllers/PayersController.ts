@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import { normalizeName } from "@pelada/core";
 import { prisma } from "../../database/client";
 import { PayersRepository } from "../repositories/PayersRepository";
 import { PayerHistoryRepository } from "../repositories/PayerHistoryRepository";
@@ -62,5 +63,34 @@ export class PayersController {
     if (!payer) throw new AppError("Pagante não encontrado", 404);
     const entries = await new PayerHistoryRepository(prisma).findByPayer(req.params.id);
     res.status(200).json(entries.map(PayerHistoryMapper.toDTO));
+  }
+
+  async createAlias(req: PeladaScopedRequest, res: Response): Promise<void> {
+    const { peladaId, id: payerId } = req.params;
+    const payer = await new PayersRepository(prisma).findById(peladaId, payerId);
+    if (!payer) throw new AppError("Pagante não encontrado", 404);
+    const alias: string = req.body.alias;
+    const aliasNorm = normalizeName(alias);
+    try {
+      const created = await prisma.payerAlias.create({
+        data: { peladaId, payerId, alias, aliasNorm },
+      });
+      res.status(201).json({ id: created.id, alias: created.alias });
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "P2002") {
+        throw new AppError("Apelido já existe para esta pelada", 409);
+      }
+      throw err;
+    }
+  }
+
+  async destroyAlias(req: PeladaScopedRequest, res: Response): Promise<void> {
+    const { peladaId, id: payerId, aliasId } = req.params;
+    const payer = await new PayersRepository(prisma).findById(peladaId, payerId);
+    if (!payer) throw new AppError("Pagante não encontrado", 404);
+    const alias = await prisma.payerAlias.findFirst({ where: { id: aliasId, payerId, peladaId } });
+    if (!alias) throw new AppError("Apelido não encontrado", 404);
+    await prisma.payerAlias.delete({ where: { id: aliasId } });
+    res.status(204).send();
   }
 }

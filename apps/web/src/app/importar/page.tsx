@@ -40,7 +40,7 @@ export default function PagamentosPage() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [showAbonoModal, setShowAbonoModal] = useState(false);
   const [motivoAberto, setMotivoAberto] = useState<{ nome: string; motivo: string } | null>(null);
-  const [abonadosColapsados, setAbonadosColapsados] = useState(false);
+  const [abonadosColapsados, setAbonadosColapsados] = useState(true);
   const [editing, setEditing] = useState<TransactionDTO | null>(null);
   const [deleting, setDeleting] = useState<TransactionDTO | null>(null);
   const [mergingPayerId, setMergingPayerId] = useState<string | null>(null);
@@ -194,20 +194,25 @@ export default function PagamentosPage() {
               className="mb-2 flex items-center gap-2 text-left"
               onClick={() => setAbonadosColapsados((v) => !v)}
             >
-              {abonadosColapsados ? (
-                <ChevronRight className="h-4 w-4 text-muted" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted" />
-              )}
-              <h2 className="font-display text-lg">{ptBR.painel.abonados}</h2>
+              <ChevronDown
+                className={`h-4 w-4 text-muted transition-transform duration-300 ${abonadosColapsados ? "-rotate-90" : "rotate-0"}`}
+              />
+              <h2 className="font-display text-lg flex items-center gap-2">
+                {ptBR.painel.abonados}
+                {report.abonados.length > 0 && (
+                  <span className="inline-flex items-center justify-center rounded-full bg-muted/20 px-2 py-0.5 text-xs font-semibold text-muted">
+                    {report.abonados.length}
+                  </span>
+                )}
+              </h2>
             </button>
 
-            {!abonadosColapsados && report.abonados.length === 0 && (
-              <p className="text-sm text-muted">{ptBR.painel.semAbonos}</p>
-            )}
-
-            {!abonadosColapsados && report.abonados.length > 0 && (
-              <div className="overflow-x-auto rounded-card border border-line bg-card shadow-card">
+            <div className={`grid transition-all duration-300 ease-in-out ${abonadosColapsados ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
+              <div className="overflow-hidden">
+                {report.abonados.length === 0 ? (
+                  <p className="pb-1 pt-1 text-sm text-muted">{ptBR.painel.semAbonos}</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-card border border-line bg-card shadow-card">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
@@ -248,20 +253,22 @@ export default function PagamentosPage() {
                     ))}
                   </tbody>
                 </table>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </section>
 
           {/* Transações da competência */}
           <section>
-            <div className="mb-3 space-y-2">
+            <div className="mb-3 flex items-center justify-between gap-4">
               <h2 className="font-display text-lg">{ptBR.importar.pagamentosTitulo}</h2>
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center gap-2">
                 <Input
                   placeholder="Buscar por nome..."
                   value={filtroNome}
                   onChange={(e) => setFiltroNome(e.target.value)}
-                  className="w-60"
+                  className="w-52"
                 />
                 <Select
                   value={filtroTipo}

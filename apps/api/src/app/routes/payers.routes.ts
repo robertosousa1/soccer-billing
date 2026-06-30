@@ -68,6 +68,17 @@ payersRouter.get("/:id/history", authorize("READ"), (req, res, next) =>
 );
 
 payersRouter.post(
+  "/:id/aliases",
+  authorize("WRITE"),
+  validate({ body: z.object({ alias: z.string().min(1) }) }),
+  (req, res, next) => payersController.createAlias(req, res).catch(next),
+);
+
+payersRouter.delete("/:id/aliases/:aliasId", authorize("WRITE"), (req, res, next) =>
+  payersController.destroyAlias(req, res).catch(next),
+);
+
+payersRouter.post(
   "/:id/abonos",
   authorize("WRITE"),
   validate({

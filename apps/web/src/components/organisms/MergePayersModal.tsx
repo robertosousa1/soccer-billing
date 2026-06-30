@@ -42,7 +42,7 @@ export function MergePayersModal({ token, peladaId, initialPayerId, onMerged, on
     if (!termo) return [];
     return allPayers
       .filter((p) => !selectedIds.includes(p.id))
-      .filter((p) => normalizeName(p.nome).includes(termo) || p.apelidos.some((a) => normalizeName(a).includes(termo)))
+      .filter((p) => normalizeName(p.nome).includes(termo) || p.apelidos.some((a) => normalizeName(a.alias).includes(termo)))
       .slice(0, 8);
   }, [allPayers, search, selectedIds]);
 
@@ -104,7 +104,7 @@ export function MergePayersModal({ token, peladaId, initialPayerId, onMerged, on
                       </Badge>
                     </div>
                     {p.apelidos.length > 0 && (
-                      <p className="mt-1 text-xs text-muted">{p.apelidos.map(toTitle).join(", ")}</p>
+                      <p className="mt-1 text-xs text-muted">{p.apelidos.map((a) => toTitle(a.alias)).join(", ")}</p>
                     )}
                   </div>
                   {targetId === p.id && (

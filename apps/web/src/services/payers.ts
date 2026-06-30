@@ -9,7 +9,7 @@ export interface PayerDTO {
   ativo: boolean;
   desde: string | null;
   telefone: string | null;
-  apelidos: string[];
+  apelidos: { id: string; alias: string }[];
   cadastradoEm: string;
 }
 
@@ -67,6 +67,18 @@ export interface PayerHistoryEntryDTO {
   usuario: string;
   data: string;
   hora: string;
+}
+
+export function createAlias(token: string, peladaId: string, payerId: string, alias: string) {
+  return apiFetch<{ id: string; alias: string }>(`/peladas/${peladaId}/payers/${payerId}/aliases`, {
+    method: "POST",
+    token,
+    body: { alias },
+  });
+}
+
+export function deleteAlias(token: string, peladaId: string, payerId: string, aliasId: string) {
+  return apiFetch<void>(`/peladas/${peladaId}/payers/${payerId}/aliases/${aliasId}`, { method: "DELETE", token });
 }
 
 export function createAbono(

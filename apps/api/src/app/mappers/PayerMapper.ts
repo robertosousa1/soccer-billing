@@ -12,7 +12,7 @@ export class PayerMapper {
       ativo: payer.ativo,
       desde: payer.desde,
       telefone: payer.telefone,
-      apelidos: payer.aliases.map((a) => a.alias),
+      apelidos: payer.aliases.map((a) => ({ id: a.id, alias: a.alias })),
       cadastradoEm: formatDateBR(payer.createdAt),
     };
   }
