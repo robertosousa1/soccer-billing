@@ -1,4 +1,4 @@
-import { formatDateBR } from "@pelada/core";
+import { addMonths, formatDateBR, toTitle } from "@pelada/core";
 import PDFDocument from "pdfkit";
 import { GetMonthlyReportService } from "./GetMonthlyReportService";
 import { PeladasRepository } from "../repositories/PeladasRepository";
@@ -19,6 +19,7 @@ const COLORS = {
   claySoft: "#fbeae5",
   pitchSoft: "#e7f1ec",
   blue: "#256364",
+  gold: "#b45309",
   emerald300: "#6ee7b7",
   red300: "#fca5a5",
   amber300: "#fcd34d",
@@ -64,42 +65,42 @@ function drawHeader(
   width: number,
 ): number {
   let y = margin;
-  doc.font("Helvetica-Bold").fontSize(22).fillColor(COLORS.pitchDeep).text(peladaNome, margin, y, {
+  doc.font("Helvetica-Bold").fontSize(20).fillColor(COLORS.pitchDeep).text(peladaNome, margin, y, {
     width,
     align: "center",
   });
-  y += 30;
-  doc.font("Helvetica").fontSize(11).fillColor(COLORS.muted).text("Resumo Financeiro", margin, y, {
+  y += 24;
+  doc.font("Helvetica").fontSize(10).fillColor(COLORS.muted).text("Resumo Financeiro", margin, y, {
     width,
     align: "center",
   });
-  y += 16;
+  y += 13;
   doc
     .font("Helvetica-Bold")
-    .fontSize(12)
+    .fontSize(11)
     .fillColor(COLORS.ink)
     .text(mesLabelTitulo(competencia), margin, y, { width, align: "center" });
-  y += 18;
+  y += 15;
   doc
     .font("Helvetica")
-    .fontSize(9)
+    .fontSize(8)
     .fillColor(COLORS.muted)
     .text(`${formatDateBR(report.periodo.inicio)} a ${formatDateBR(report.periodo.fim)}`, margin, y, {
       width,
       align: "center",
     });
-  y += 13;
+  y += 11;
   doc
     .fontSize(8)
     .fillColor(COLORS.muted)
-    .text(`Gerado em ${formatDateBR(new Date())}`, margin, y, { width, align: "center" });
-  y += 16;
+    .text(`Gerado em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`, margin, y, { width, align: "center" });
+  y += 12;
   doc.moveTo(margin, y).lineTo(margin + width, y).lineWidth(1).strokeColor(COLORS.line).stroke();
-  return y + 20;
+  return y + 14;
 }
 
 function drawScoreboard(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: number, width: number, y: number): number {
-  const height = 90;
+  const height = 76;
   const gradient = doc.linearGradient(margin, y, margin, y + height);
   gradient.stop(0, COLORS.pitchDeep).stop(1, COLORS.pitchDark);
   doc.roundedRect(margin, y, width, height, 12).fill(gradient);
@@ -108,7 +109,7 @@ function drawScoreboard(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: 
   const cells: { label: string; value: string; color: string }[] = [
     { label: "ENTRADA", value: report.entrou, color: COLORS.emerald300 },
     { label: "SAÍDA", value: report.saiu, color: COLORS.red300 },
-    { label: "SALDO", value: report.saldo, color: COLORS.amber300 },
+    { label: "SALDO NA COMPETÊNCIA", value: report.saldo, color: COLORS.amber300 },
   ];
 
   cells.forEach((cell, i) => {
@@ -116,50 +117,61 @@ function drawScoreboard(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: 
     doc.fillOpacity(0.7);
     doc
       .font("Helvetica-Bold")
-      .fontSize(9)
+      .fontSize(8)
       .fillColor(COLORS.white)
-      .text(cell.label, cx, y + 26, { width: colWidth, align: "center" });
+      .text(cell.label, cx, y + 18, { width: colWidth, align: "center" });
     doc.fillOpacity(1);
     doc
       .font("Helvetica-Bold")
-      .fontSize(20)
+      .fontSize(19)
       .fillColor(cell.color)
-      .text(cell.value, cx, y + 42, { width: colWidth, align: "center" });
+      .text(cell.value, cx, y + 32, { width: colWidth, align: "center" });
 
     if (i > 0) {
       doc.strokeOpacity(0.15);
-      doc.moveTo(cx, y + 16).lineTo(cx, y + height - 16).lineWidth(1).strokeColor(COLORS.white).stroke();
+      doc.moveTo(cx, y + 12).lineTo(cx, y + height - 12).lineWidth(1).strokeColor(COLORS.white).stroke();
       doc.strokeOpacity(1);
     }
   });
 
-  return y + height + 20;
+  return y + height + 12;
 }
 
-function drawStatCards(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: number, width: number, y: number): number {
-  const gap = 12;
-  const cardWidth = (width - gap * 3) / 4;
-  const cardHeight = 64;
+function drawStatCards(
+  doc: PDFKit.PDFDocument,
+  report: MonthlyReport,
+  competencia: string,
+  margin: number,
+  width: number,
+  y: number,
+): number {
+  const gap = 10;
+  const numCards = 5;
+  const cardWidth = (width - gap * (numCards - 1)) / numCards;
+  const cardHeight = 54;
   const mensalistasPagos = report.mensalistas.filter((m) => m.pago).length;
   const pctMensalistas =
     report.mensalistas.length === 0 ? 0 : Math.round((mensalistasPagos / report.mensalistas.length) * 100);
 
-  const cards: { label: string; value: string; secondary: string; secondaryColor: string }[] = [
-    {
-      label: "CAIXA INÍCIO",
-      value: report.caixaInicial,
-      secondary: "antes da competência",
-      secondaryColor: COLORS.muted,
-    },
-    {
-      label: "CAIXA FIM",
-      value: report.caixaFinal,
-      secondary:
-        report.caixaVariacaoPct === null
-          ? "sem base para %"
-          : `${report.caixaVariacaoPct >= 0 ? "+" : ""}${report.caixaVariacaoPct.toFixed(0)}% na competência`,
-      secondaryColor: report.caixaVariacaoPct === null || report.caixaVariacaoPct >= 0 ? COLORS.pitch : COLORS.clay,
-    },
+  const prevComp = addMonths(competencia, -1);
+  const [prevY, prevM] = prevComp.split("-");
+  const prevLabel = `${MESES[Number(prevM) - 1].slice(0, 3)}/${prevY.slice(2)}`;
+
+  const pctSign = report.caixaVariacaoPct !== null && report.caixaVariacaoPct >= 0 ? "+" : "";
+  const cards: { label: string; value: string; secondary: string; secondaryColor: string; centerSecondary?: boolean }[] =
+    [
+      {
+        label: "CAIXA INÍCIO",
+        value: report.caixaInicial,
+        secondary: `acumulado ${prevLabel}`,
+        secondaryColor: COLORS.muted,
+      },
+      {
+        label: "CAIXA FIM",
+        value: report.caixaFinal,
+        secondary: report.caixaVariacaoPct === null ? "" : `${pctSign}${report.caixaVariacaoPct.toFixed(0)}%`,
+        secondaryColor: report.caixaVariacaoPct === null || report.caixaVariacaoPct >= 0 ? COLORS.pitch : COLORS.clay,
+      },
     {
       label: "MENSALISTAS",
       value: `${mensalistasPagos}/${report.mensalistas.length}`,
@@ -170,7 +182,13 @@ function drawStatCards(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: n
       label: "AVULSOS",
       value: String(report.avulsos.length),
       secondary: report.avulsos.length === 1 ? "jogador" : "jogadores",
-      secondaryColor: COLORS.blue,
+      secondaryColor: COLORS.muted,
+    },
+    {
+      label: "ABONADOS",
+      value: String(report.abonados.length),
+      secondary: report.abonados.length === 1 ? "jogador" : "jogadores",
+      secondaryColor: COLORS.muted,
     },
   ];
 
@@ -181,20 +199,23 @@ function drawStatCards(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: n
       .font("Helvetica-Bold")
       .fontSize(8)
       .fillColor(COLORS.muted)
-      .text(card.label, cx + 10, y + 10, { width: cardWidth - 20 });
+      .text(card.label, cx + 10, y + 7, { width: cardWidth - 20 });
     doc
       .font("Helvetica-Bold")
       .fontSize(16)
       .fillColor(COLORS.ink)
-      .text(card.value, cx + 10, y + 24, { width: cardWidth - 20 });
+      .text(card.value, cx + 10, y + 22, { width: cardWidth - 20 });
     doc
       .font("Helvetica")
       .fontSize(8)
       .fillColor(card.secondaryColor)
-      .text(card.secondary, cx + 10, y + 46, { width: cardWidth - 20 });
+      .text(card.secondary, cx + 10, y + 40, {
+        width: cardWidth - 20,
+        align: card.centerSecondary ? "center" : "left",
+      });
   });
 
-  return y + cardHeight + 20;
+  return y + cardHeight + 12;
 }
 
 function drawQuadraSection(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: number, width: number, y: number): number {
@@ -204,11 +225,11 @@ function drawQuadraSection(doc: PDFKit.PDFDocument, report: MonthlyReport, margi
   const border = paga ? COLORS.pitch : COLORS.clay;
   const text = paga ? COLORS.pitchDeep : COLORS.clay;
 
-  const lineHeight = 14;
+  const lineHeight = 12;
   const detailLines = paga ? Math.max(pagamentos.length, 1) : 1;
-  const height = 28 + detailLines * lineHeight;
+  const height = 24 + detailLines * lineHeight;
 
-  y = ensureSpace(doc, y, height + 20, margin);
+  y = ensureSpace(doc, y, height + 16, margin);
 
   doc.lineWidth(1);
   doc.roundedRect(margin, y, width, height, 8).fillAndStroke(bg, border);
@@ -247,7 +268,22 @@ function drawQuadraSection(doc: PDFKit.PDFDocument, report: MonthlyReport, margi
       );
   }
 
-  return y + height + 24;
+  return y + height + 16;
+}
+
+const PARTICLES = new Set(["de", "da", "do", "dos", "das", "e", "em", "no", "na", "nos", "nas"]);
+
+function shortName(nome: string): string {
+  const words = toTitle(nome).split(" ").filter(Boolean);
+  if (words.length <= 2) return words.join(" ");
+  const result: string[] = [];
+  for (const w of words) {
+    if (!PARTICLES.has(w.toLowerCase())) {
+      result.push(w);
+      if (result.length === 2) break;
+    }
+  }
+  return result.length > 0 ? result.join(" ") : words[0];
 }
 
 function drawPeopleColumn(
@@ -260,11 +296,11 @@ function drawPeopleColumn(
   color: string,
 ): void {
   doc.font("Helvetica-Bold").fontSize(10).fillColor(color).text(`${titulo} (${nomes.length})`, cx, y, { width: colWidth });
-  let rowY = y + 18;
-  const rowHeight = 14;
+  let rowY = y + 16;
+  const rowHeight = 12;
   for (const nome of nomes) {
     doc.circle(cx + 4, rowY + 4, 3).fill(color);
-    doc.font("Helvetica").fontSize(9).fillColor(COLORS.ink).text(nome, cx + 14, rowY, {
+    doc.font("Helvetica").fontSize(8.5).fillColor(COLORS.ink).text(nome, cx + 14, rowY, {
       width: colWidth - 14,
       height: rowHeight,
       ellipsis: true,
@@ -273,24 +309,64 @@ function drawPeopleColumn(
   }
 }
 
-function drawParticipants(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: number, width: number, y: number): void {
-  const pagos = report.mensalistas.filter((m) => m.pago).map((m) => m.nome);
-  const inadimplentes = report.mensalistas.filter((m) => !m.pago).map((m) => m.nome);
-  const avulsos = report.avulsos.map((a) => a.nome);
+function drawContribuicoes(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: number, width: number, y: number): number {
+  if (report.contribuicoes.length === 0) return y;
 
-  const maxRows = Math.max(pagos.length, inadimplentes.length, avulsos.length);
-  const sectionHeight = 18 + 18 + maxRows * 14;
+  const rowHeight = 12;
+  const cols = 2;
+  const colGap = 12;
+  const colWidth = (width - colGap) / cols;
+  const valueWidth = 60;
+  const maxNameWidth = colWidth - 14 - valueWidth - 4; // bullet(14) + name + gap(4) + value
+  const rows = Math.ceil(report.contribuicoes.length / cols);
+  const sectionHeight = 18 + rows * rowHeight;
+  y = ensureSpace(doc, y, sectionHeight + 14, margin);
+
+  doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.ink).text("Contribuições", margin, y);
+  y += 14;
+
+  report.contribuicoes.forEach((c, idx) => {
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const cx = margin + col * (colWidth + colGap);
+    const cy = y + row * rowHeight;
+    doc.circle(cx + 4, cy + 4, 3).fill(COLORS.blue);
+    const nome = shortName(c.nome);
+    doc.font("Helvetica").fontSize(8.5).fillColor(COLORS.ink);
+    const renderedWidth = Math.min(doc.widthOfString(nome), maxNameWidth);
+    doc.text(nome, cx + 14, cy, { width: maxNameWidth, height: rowHeight, ellipsis: true });
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(8.5)
+      .fillColor(COLORS.pitch)
+      .text(c.valor, cx + 14 + renderedWidth + 7, cy, { width: valueWidth });
+  });
+
+  return y + rows * rowHeight;
+}
+
+function drawParticipants(doc: PDFKit.PDFDocument, report: MonthlyReport, margin: number, width: number, y: number): number {
+  const pagos = report.mensalistas.filter((m) => m.pago).map((m) => shortName(m.nome));
+  const inadimplentes = report.mensalistas.filter((m) => !m.pago && !m.abonado).map((m) => shortName(m.nome));
+  const abonados = report.abonados.map((a) => shortName(a.nome));
+  const avulsos = report.avulsos.map((a) => (a.vezes > 1 ? `${shortName(a.nome)} (${a.vezes}x)` : shortName(a.nome)));
+
+  const gap = 14;
+  const colWidth = (width - gap * 3) / 4;
+
+  const maxRows = Math.max(pagos.length, inadimplentes.length, abonados.length, avulsos.length);
+  const sectionHeight = 16 + 16 + maxRows * 12;
   y = ensureSpace(doc, y, sectionHeight, margin);
 
-  doc.font("Helvetica-Bold").fontSize(13).fillColor(COLORS.ink).text("Pessoas e status", margin, y);
-  y += 22;
-
-  const gap = 16;
-  const colWidth = (width - gap * 2) / 3;
+  doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.ink).text("Pessoas e status", margin, y);
+  y += 18;
 
   drawPeopleColumn(doc, margin, colWidth, y, "Pagos", pagos, COLORS.pitch);
   drawPeopleColumn(doc, margin + colWidth + gap, colWidth, y, "Inadimplentes", inadimplentes, COLORS.clay);
-  drawPeopleColumn(doc, margin + (colWidth + gap) * 2, colWidth, y, "Avulsos", avulsos, COLORS.blue);
+  drawPeopleColumn(doc, margin + (colWidth + gap) * 2, colWidth, y, "Abonados", abonados, COLORS.gold);
+  drawPeopleColumn(doc, margin + (colWidth + gap) * 3, colWidth, y, "Avulsos", avulsos, COLORS.blue);
+
+  return y + sectionHeight + 16;
 }
 
 export class BuildMonthlyReportPdfService {
@@ -310,9 +386,10 @@ export class BuildMonthlyReportPdfService {
 
     let y = drawHeader(doc, pelada.nome, competencia, report, margin, width);
     y = drawScoreboard(doc, report, margin, width, y);
-    y = drawStatCards(doc, report, margin, width, y);
+    y = drawStatCards(doc, report, competencia, margin, width, y);
     y = drawQuadraSection(doc, report, margin, width, y);
-    drawParticipants(doc, report, margin, width, y);
+    y = drawParticipants(doc, report, margin, width, y);
+    drawContribuicoes(doc, report, margin, width, y);
 
     doc.end();
     return done;

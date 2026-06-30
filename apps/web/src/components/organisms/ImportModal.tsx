@@ -12,6 +12,7 @@ import { previewImport, confirmImport, type ImportPreviewResponse } from "@/serv
 import { getConfig } from "@/services/config";
 import { ApiError } from "@/services/api";
 import { ptBR, interpolate } from "@/i18n/pt-BR";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface ImportModalProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ interface ImportModalProps {
 }
 
 export function ImportModal({ onClose, onImported }: ImportModalProps) {
+  useEscapeKey(onClose);
   const { token } = useAuth();
   const { current } = usePelada();
   const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);

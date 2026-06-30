@@ -8,6 +8,7 @@ import { Badge } from "@/components/atoms/Badge";
 import { Input } from "@/components/atoms/Input";
 import { ptBR } from "@/i18n/pt-BR";
 import { listPayers, mergePayers, type PayerDTO } from "@/services/payers";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface MergePayersModalProps {
   token: string;
@@ -18,6 +19,7 @@ interface MergePayersModalProps {
 }
 
 export function MergePayersModal({ token, peladaId, initialPayerId, onMerged, onClose }: MergePayersModalProps) {
+  useEscapeKey(onClose);
   const [allPayers, setAllPayers] = useState<PayerDTO[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([initialPayerId]);
   const [targetId, setTargetId] = useState(initialPayerId);

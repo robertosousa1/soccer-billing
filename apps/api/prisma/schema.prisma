@@ -47,6 +47,7 @@ model User {
   password            String
   memberships         PeladaMember[]
   payerHistoryEntries PayerHistoryEntry[]
+  abonosConcedidos    PayerAbono[]
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 }
@@ -60,6 +61,7 @@ model Pelada {
   payers       Payer[]
   imports      Import[]
   transactions Transaction[]
+  abonos       PayerAbono[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 }
@@ -120,10 +122,29 @@ model Payer {
   shares      Share[]
   typeChanges PayerTypeChange[]
   history     PayerHistoryEntry[]
+  abonos      PayerAbono[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
   @@index([peladaId])
+}
+
+/// Isenção de inadimplência de um mensalista em uma competência específica.
+/// O motivo é obrigatório e fica armazenado para consulta, mas não aparece no PDF.
+model PayerAbono {
+  id              String   @id @default(uuid())
+  payer           Payer    @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  payerId         String
+  pelada          Pelada   @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId        String
+  competencia     String   // "YYYY-MM"
+  motivo          String
+  createdBy       User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  @@unique([payerId, competencia])
+  @@index([peladaId, competencia])
 }
 
 enum PayerHistoryAction {

@@ -2,12 +2,14 @@ import { Router } from "express";
 import { z } from "zod";
 import { PayersController } from "../controllers/PayersController";
 import { ReportsController } from "../controllers/ReportsController";
+import { AbonosController } from "../controllers/AbonosController";
 import { authorize } from "../middlewares/authorize";
 import { validate } from "../middlewares/validate";
 
 const payersRouter = Router({ mergeParams: true });
 const payersController = new PayersController();
 const reportsController = new ReportsController();
+const abonosController = new AbonosController();
 
 payersRouter.get("/", authorize("READ"), (req, res, next) => payersController.list(req, res).catch(next));
 
@@ -63,6 +65,22 @@ payersRouter.get("/:id/charge-message", authorize("WRITE"), (req, res, next) =>
 
 payersRouter.get("/:id/history", authorize("READ"), (req, res, next) =>
   payersController.history(req, res).catch(next),
+);
+
+payersRouter.post(
+  "/:id/abonos",
+  authorize("WRITE"),
+  validate({
+    body: z.object({
+      competencia: z.string().regex(/^\d{4}-\d{2}$/),
+      motivo: z.string().min(1),
+    }),
+  }),
+  (req, res, next) => abonosController.create(req, res).catch(next),
+);
+
+payersRouter.delete("/:id/abonos/:competencia", authorize("WRITE"), (req, res, next) =>
+  abonosController.destroy(req, res).catch(next),
 );
 
 export { payersRouter };

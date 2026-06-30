@@ -32,17 +32,31 @@ Regra de Atomic Design: **átomos não conhecem domínio** (só props visuais). 
 de domínio entra a partir de organisms/templates. Reaproveite tipos e validações de
 `@pelada/core` (ex.: `formatBRL`, `suggestSplit`) em vez de reimplementar no front.
 
-## Telas (paridade com o protótipo)
+## Telas
 
-- **Painel**: seletor de mês → *scoreboard* (Entrou / Saiu / Saldo) + stats (mensalistas
-  pagos, avulsos, inadimplentes, caixa acumulado) + aviso da quadra + tabelas de mensalistas
-  e avulsos + inadimplentes com botão "Cobrar no WhatsApp" + exportar CSV.
-- **Importar**: dropzone → tela de conciliação (tabela editável: categoria, pagante,
-  competência, **dividir em cotas**) → confirmar. Avisos de duplicadas e arquivo idêntico.
-- **Pagantes**: base com tipo, "mensalista desde", **WhatsApp** (marca quem está sem número),
-  total recebido; editor com telefone e apelidos reconhecidos.
-- **Configurações**: valores (com aviso "não altera meses já lançados"), identificadores da
-  quadra, backup/restauração JSON.
+- **Painel** (`/painel`): dashboard analítico somente-leitura. Seletor de mês →
+  *scoreboard* (Entrou / Saiu / Saldo na competência) + stat cards (mensalistas pagos,
+  inadimplentes, abonados, avulsos, caixa início/fim) + aviso da quadra + tabela de
+  mensalistas (status de pagamento) + exportar PDF. **Sem ações de escrita** — é a
+  homepage analítica do organizador.
+
+- **Pagamentos** (`/importar`): tela operacional escopada por competência. Seletor de mês
+  (igual ao Painel) → duas seções:
+  1. **Mensalistas** — tabela de status com ações: "Cobrar no WhatsApp" (inadimplentes) +
+     "Abonar" (abre modal com motivo obrigatório) + "Remover abono". Abonos são
+     por-competência e afetam apenas o mês selecionado.
+  2. **Transações** — lançamentos da competência com edição, exclusão, mesclagem de
+     pagantes e dropzone de importação PicPay + registro manual.
+  O botão "Importar" abre o modal de conciliação (tabela editável: categoria, pagante,
+  competência, **dividir em cotas**); avisos de duplicadas e arquivo idêntico.
+
+- **Pagantes** (`/pagantes`): base de jogadores com categoria (MENSALISTA/AVULSO/CONTRIBUIÇÃO),
+  "mensalista desde", WhatsApp, total recebido; editor com telefone e apelidos reconhecidos;
+  histórico de alterações por jogador.
+
+- **Configurações** (`/configuracoes`): valores de referência (mensalidade, avulso, aluguel,
+  dia de vencimento — com aviso "não altera meses já lançados"), identificadores da quadra,
+  backup/restauração JSON.
 
 ## Design tokens → Tailwind
 

@@ -13,9 +13,13 @@ import type { MonthlyReportDTO } from "@/services/reports";
 export function MensalistasTable({
   mensalistas,
   competencia,
+  onAbonar,
+  onRemoverAbono,
 }: {
   mensalistas: MonthlyReportDTO["mensalistas"];
   competencia: string;
+  onAbonar?: (payer: { id: string; nome: string }) => void;
+  onRemoverAbono?: (payerId: string) => void;
 }) {
   const { token } = useAuth();
   const { current } = usePelada();
@@ -25,7 +29,8 @@ export function MensalistasTable({
     return <p className="text-sm text-muted">{ptBR.painel.semDados}</p>;
   }
 
-  const ordenados = [...mensalistas].sort((a, b) => Number(b.pago) - Number(a.pago));
+  const scoreOf = (m: MonthlyReportDTO["mensalistas"][number]) => (m.pago ? 2 : m.abonado ? 1 : 0);
+  const ordenados = [...mensalistas].sort((a, b) => scoreOf(b) - scoreOf(a));
 
   async function cobrar(payerId: string) {
     if (!token || !current) return;
@@ -53,21 +58,43 @@ export function MensalistasTable({
             <tr key={m.id} className="border-b border-line last:border-0 hover:bg-chalk">
               <td className="px-4 py-3">{toTitle(m.nome)}</td>
               <td className="px-4 py-3">
-                {m.pago ? <Badge variant="ok">{ptBR.situacao.pago}</Badge> : <Badge variant="due">{ptBR.situacao.emAberto}</Badge>}
+                <div className="flex flex-wrap items-center gap-1">
+                  {m.pago ? (
+                    <Badge variant="ok">{ptBR.situacao.pago}</Badge>
+                  ) : m.abonado ? (
+                    <Badge variant="outro">{ptBR.situacao.abonado}</Badge>
+                  ) : (
+                    <Badge variant="due">{ptBR.situacao.emAberto}</Badge>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3 text-right">
-                {!m.pago && (
-                  <Button
-                    variant="gold"
-                    size="sm"
-                    loading={loadingId === m.id}
-                    disabled={!m.telefone}
-                    title={!m.telefone ? "Sem WhatsApp cadastrado" : undefined}
-                    onClick={() => cobrar(m.id)}
-                  >
-                    {ptBR.whatsapp.cobrar}
-                  </Button>
-                )}
+                <div className="flex items-center justify-end gap-2">
+                  {!m.pago && !m.abonado && (
+                    <>
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        loading={loadingId === m.id}
+                        disabled={!m.telefone}
+                        title={!m.telefone ? "Sem WhatsApp cadastrado" : undefined}
+                        onClick={() => cobrar(m.id)}
+                      >
+                        {ptBR.whatsapp.cobrar}
+                      </Button>
+                      {onAbonar && (
+                        <Button variant="ghost" size="sm" onClick={() => onAbonar({ id: m.id, nome: m.nome })}>
+                          {ptBR.painel.abonarBtn}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {m.abonado && onRemoverAbono && (
+                    <Button variant="ghost" size="sm" onClick={() => onRemoverAbono(m.id)}>
+                      {ptBR.painel.removerAbono}
+                    </Button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

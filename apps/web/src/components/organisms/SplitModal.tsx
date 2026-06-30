@@ -10,6 +10,7 @@ import { ptBR } from "@/i18n/pt-BR";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePelada } from "@/contexts/PeladaContext";
 import { listPayers, type PayerDTO } from "@/services/payers";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface SplitModalProps {
   linha: ImportLineDraft;
@@ -18,6 +19,7 @@ interface SplitModalProps {
 }
 
 export function SplitModal({ linha, onClose, onSave }: SplitModalProps) {
+  useEscapeKey(onClose);
   const { token } = useAuth();
   const { current } = usePelada();
   const [shares, setShares] = useState<ImportShareDraft[]>(linha.shares ?? []);

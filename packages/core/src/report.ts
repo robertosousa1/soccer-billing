@@ -11,6 +11,7 @@ export interface MonthlyReport {
   avulsoCount: number;
   avulsos: Payer[];
   inadimplentes: Payer[];
+  abonados: Payer[];
 }
 
 /** cotas de uma entrada: usa shares se houver, senão sintetiza 1 cota. */
@@ -103,6 +104,7 @@ export function computeReport(
   payers: Payer[],
   config?: Config,
   payerTypeChanges: PayerTypeChange[] = [],
+  abonadoIds: ReadonlySet<string> = new Set(),
 ): MonthlyReport {
   const tx = transactions.filter((t) => t.competencia === ym && !t.ignorada);
   const entradas = tx.filter((t) => t.valor > 0);
@@ -119,8 +121,10 @@ export function computeReport(
     cotas.filter((c) => c.categoria === "AVULSO" && c.payerId).map((c) => c.payerId as string),
   );
   const avulsos = payers.filter((p) => avulsoPayerIds.has(p.id));
+  const abonados = payers.filter((p) => abonadoIds.has(p.id));
   const inadimplentes = payers.filter((p) => {
     if (!p.ativo) return false;
+    if (abonadoIds.has(p.id)) return false;
     const { tipo, desde } = resolveTipoEDesde(p, payerTypeChanges, ym);
     return tipo === "MENSALISTA" && (!desde || desde <= ym) && !mensalistasPagaram.has(p.id);
   });
@@ -141,6 +145,7 @@ export function computeReport(
     avulsoCount,
     avulsos,
     inadimplentes,
+    abonados,
   };
 }
 

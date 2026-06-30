@@ -16,10 +16,12 @@ export interface MonthlyReportDTO {
     diaPagamento: number | null;
     valorReferencia: string | null;
   };
-  mensalistas: { id: string; nome: string; pago: boolean; telefone: string | null }[];
+  mensalistas: { id: string; nome: string; pago: boolean; abonado: boolean; telefone: string | null }[];
   avulsoCount: number;
-  avulsos: { id: string; nome: string; telefone: string | null }[];
+  avulsos: { id: string; nome: string; telefone: string | null; vezes: number }[];
   inadimplentes: { id: string; nome: string; telefone: string | null }[];
+  abonados: { id: string; nome: string; motivo: string }[];
+  contribuicoes: { nome: string; valor: string }[];
 }
 
 export function getMonthlyReport(token: string, peladaId: string, competencia: string) {

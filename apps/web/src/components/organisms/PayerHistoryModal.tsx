@@ -8,6 +8,7 @@ import { Button } from "@/components/atoms/Button";
 import { ptBR } from "@/i18n/pt-BR";
 import { getPayerHistory, type PayerDTO, type PayerHistoryEntryDTO } from "@/services/payers";
 import { mesLabel } from "@/lib/competencia";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const CAMPOS_COMPETENCIA = new Set(["Mensalista desde", "Vigência da troca de tipo"]);
 
@@ -25,6 +26,7 @@ interface PayerHistoryModalProps {
 }
 
 export function PayerHistoryModal({ token, peladaId, payer, onClose }: PayerHistoryModalProps) {
+  useEscapeKey(onClose);
   const [entries, setEntries] = useState<PayerHistoryEntryDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

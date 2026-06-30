@@ -12,6 +12,7 @@ import { usePelada } from "@/contexts/PeladaContext";
 import { getConfig } from "@/services/config";
 import { listPayers, type PayerDTO } from "@/services/payers";
 import { createTransaction, type CreateTransactionInput } from "@/services/transactions";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 type ShareCategoria = "MENSALIDADE" | "AVULSO" | "CONTRIBUICAO" | "OUTRO";
 type OutflowCategory = "QUADRA" | "OUTRA_SAIDA";
@@ -31,6 +32,7 @@ function todayLocalISO(): string {
 }
 
 export function ManualTransactionModal({ onClose, onCreated }: ManualTransactionModalProps) {
+  useEscapeKey(onClose);
   const { token } = useAuth();
   const { current } = usePelada();
   const [payers, setPayers] = useState<PayerDTO[]>([]);

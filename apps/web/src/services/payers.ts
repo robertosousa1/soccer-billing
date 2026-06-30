@@ -69,6 +69,19 @@ export interface PayerHistoryEntryDTO {
   hora: string;
 }
 
+export function createAbono(
+  token: string,
+  peladaId: string,
+  payerId: string,
+  data: { competencia: string; motivo: string },
+) {
+  return apiFetch<void>(`/peladas/${peladaId}/payers/${payerId}/abonos`, { method: "POST", token, body: data });
+}
+
+export function deleteAbono(token: string, peladaId: string, payerId: string, competencia: string) {
+  return apiFetch<void>(`/peladas/${peladaId}/payers/${payerId}/abonos/${competencia}`, { method: "DELETE", token });
+}
+
 export function getPayerHistory(token: string, peladaId: string, payerId: string) {
   return apiFetch<PayerHistoryEntryDTO[]>(`/peladas/${peladaId}/payers/${payerId}/history`, { token });
 }

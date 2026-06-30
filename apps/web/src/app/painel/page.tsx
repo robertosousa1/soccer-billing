@@ -109,12 +109,13 @@ export default function PainelPage() {
         <div className="space-y-6">
           <Scoreboard entrou={report.entrou} saiu={report.saiu} saldo={report.saldo} />
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <Stat
               label="Mensalistas pagos"
               value={`${report.mensalistas.filter((m) => m.pago).length}/${report.mensalistas.length}`}
             />
             <Stat label={ptBR.painel.inadimplentes} value={report.inadimplentes.length} />
+            <Stat label={ptBR.painel.abonados} value={report.abonados.length} />
             <Stat label={ptBR.painel.avulsosNoMes} value={report.avulsoCount} />
             <Stat label={ptBR.painel.caixaInicial} value={report.caixaInicial} />
             <Stat
@@ -144,10 +145,14 @@ export default function PainelPage() {
 
           <section>
             <h2 className="mb-2 font-display text-lg">{ptBR.painel.mensalistasPagaram}</h2>
-            <MensalistasTable mensalistas={report.mensalistas} competencia={competencia} />
+            <MensalistasTable
+                mensalistas={report.mensalistas}
+                competencia={competencia}
+              />
           </section>
         </div>
       )}
+
     </PageShell>
   );
 }

@@ -46,10 +46,21 @@ export function addMonths(ym: string, delta: number): string {
  * Usa `new Date(ano, mes, 0)` (argumentos numéricos, não parsing de string) pra pegar o
  * último dia do mês sem cair no bug de fuso-horário do `new Date("YYYY-MM-DD")`.
  */
-export function competenciaPeriodo(ym: string): { inicio: string; fim: string } {
-  const [y, m] = ym.split("-").map(Number);
-  const inicio = `${ym}-01`;
-  const ultimoDia = new Date(y as number, m as number, 0).getDate();
-  const fim = `${ym}-${String(ultimoDia).padStart(2, "0")}`;
+export function competenciaPeriodo(ym: string, dia: number = 1): { inicio: string; fim: string } {
+  const parts = ym.split("-").map(Number);
+  const y = parts[0] as number;
+  const m = parts[1] as number;
+  if (dia <= 1) {
+    const inicio = `${ym}-01`;
+    const ultimoDia = new Date(y, m, 0).getDate();
+    const fim = `${ym}-${String(ultimoDia).padStart(2, "0")}`;
+    return { inicio, fim };
+  }
+  // Ciclo começa no dia `dia` do mês anterior e termina no dia (dia-1) do mês atual.
+  const prevYear = m === 1 ? y - 1 : y;
+  const prevMonth = m === 1 ? 12 : m - 1;
+  const prevYm = `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
+  const inicio = `${prevYm}-${String(dia).padStart(2, "0")}`;
+  const fim = `${ym}-${String(dia - 1).padStart(2, "0")}`;
   return { inicio, fim };
 }

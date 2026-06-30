@@ -7,6 +7,7 @@ import { Input } from "@/components/atoms/Input";
 import { Select } from "@/components/atoms/Select";
 import { ptBR } from "@/i18n/pt-BR";
 import type { PayerDTO, PayerType } from "@/services/payers";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface PayerEditorProps {
   initial?: PayerDTO;
@@ -21,6 +22,7 @@ interface PayerEditorProps {
 }
 
 export function PayerEditor({ initial, onSave, onClose }: PayerEditorProps) {
+  useEscapeKey(onClose);
   const [nome, setNome] = useState(initial ? toTitle(initial.nome) : "");
   const [tipo, setTipo] = useState<PayerType>(initial?.tipo ?? "MENSALISTA");
   const [telefone, setTelefone] = useState(initial?.telefone ?? "");

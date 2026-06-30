@@ -8,6 +8,7 @@ import { Select } from "@/components/atoms/Select";
 import { AlertBanner } from "@/components/molecules/AlertBanner";
 import { ptBR } from "@/i18n/pt-BR";
 import type { TransactionDTO } from "@/services/transactions";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface TransactionEditorProps {
   transaction: TransactionDTO;
@@ -22,6 +23,7 @@ interface TransactionEditorProps {
 }
 
 export function TransactionEditor({ transaction, onSave, onClose }: TransactionEditorProps) {
+  useEscapeKey(onClose);
   const isManual = transaction.origem === "MANUAL";
   const [data, setData] = useState(transaction.data);
   const [valorTexto, setValorTexto] = useState(formatBRL(Math.abs(parseMoneyToCents(transaction.valor))));

@@ -14,11 +14,12 @@ import { prisma } from "../../database/client";
 
 export class GetMonthlyReportService {
   async execute(peladaId: string, competencia: string) {
-    const [config, allTx, payers, typeChanges] = await Promise.all([
+    const [config, allTx, payers, typeChanges, abonos] = await Promise.all([
       prisma.config.findUnique({ where: { peladaId } }),
       prisma.transaction.findMany({ where: { peladaId }, include: { shares: true } }),
       prisma.payer.findMany({ where: { peladaId } }),
       prisma.payerTypeChange.findMany({ where: { payer: { peladaId } } }),
+      prisma.payerAbono.findMany({ where: { peladaId, competencia } }),
     ]);
 
     const corePayerTypeChanges: CorePayerTypeChange[] = typeChanges.map((c) => ({
@@ -66,7 +67,9 @@ export class GetMonthlyReportService {
       apelidos: [],
     }));
 
-    const report = computeReport(competencia, coreTx, corePayers, coreConfig, corePayerTypeChanges);
+    const abonadoIds = new Set(abonos.map((a) => a.payerId));
+    const abonadoMotivo = new Map(abonos.map((a) => [a.payerId, a.motivo]));
+    const report = computeReport(competencia, coreTx, corePayers, coreConfig, corePayerTypeChanges, abonadoIds);
     // caixa no início = acumulado até a competência anterior (o que já estava em caixa antes desta);
     // caixa no final = acumulado incluindo esta competência.
     const caixaInicial = caixaAcumulado(addMonths(competencia, -1), coreTx, corePayers, coreConfig);
@@ -78,9 +81,36 @@ export class GetMonthlyReportService {
       (t) => t.competencia === competencia && t.outflowCategory === "QUADRA" && !t.ignorada,
     );
 
+    const avulsoContagemMap = new Map<string, number>();
+    const contribuicoesMap = new Map<string, { nome: string; centavos: number }>();
+    for (const tx of allTx) {
+      if (tx.competencia !== competencia || tx.ignorada) continue;
+      for (const share of tx.shares) {
+        if (share.categoria === "AVULSO" && share.payerId) {
+          avulsoContagemMap.set(share.payerId, (avulsoContagemMap.get(share.payerId) ?? 0) + 1);
+        }
+        if (share.categoria === "CONTRIBUICAO") {
+          const key = share.payerId ?? tx.nomeOriginal;
+          const nome = share.payerId
+            ? (payers.find((p) => p.id === share.payerId)?.nome ?? tx.nomeOriginal)
+            : tx.nomeOriginal;
+          const entry = contribuicoesMap.get(key);
+          if (entry) {
+            entry.centavos += share.valor;
+          } else {
+            contribuicoesMap.set(key, { nome, centavos: share.valor });
+          }
+        }
+      }
+    }
+    const contribuicoes = Array.from(contribuicoesMap.values()).map(({ nome, centavos }) => ({
+      nome,
+      valor: formatBRL(centavos),
+    }));
+
     return {
       competencia,
-      periodo: competenciaPeriodo(competencia),
+      periodo: competenciaPeriodo(competencia, config?.diaPagamentoQuadra ?? 1),
       entrou: formatBRL(report.totalEntradas),
       saiu: formatBRL(report.totalSaidas),
       saldo: formatBRL(report.saldo),
@@ -104,11 +134,14 @@ export class GetMonthlyReportService {
           id: p.id,
           nome: p.nome,
           pago: report.mensalistasPagaram.has(p.id),
+          abonado: abonadoIds.has(p.id),
           telefone: p.telefone,
         })),
       avulsoCount: report.avulsoCount,
-      avulsos: report.avulsos.map((p) => ({ id: p.id, nome: p.nome, telefone: p.telefone })),
+      avulsos: report.avulsos.map((p) => ({ id: p.id, nome: p.nome, telefone: p.telefone, vezes: avulsoContagemMap.get(p.id) ?? 1 })),
       inadimplentes: report.inadimplentes.map((p) => ({ id: p.id, nome: p.nome, telefone: p.telefone })),
+      abonados: report.abonados.map((p) => ({ id: p.id, nome: p.nome, motivo: abonadoMotivo.get(p.id) ?? "" })),
+      contribuicoes,
     };
   }
 }
