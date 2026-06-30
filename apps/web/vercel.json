@@ -1,3 +1,4 @@
 {
-  "ignoreCommand": "bash ../../scripts/vercel-ignore.sh"
+  "ignoreCommand": "bash ../../scripts/vercel-ignore.sh",
+  "outputDirectory": ".next"
 }
