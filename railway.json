@@ -1,12 +1,16 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
-  "services": {
-    "api": {
-      "watchPatterns": ["apps/api/**", "packages/**", "Dockerfile", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "tsconfig.base.json"],
-      "build": {
-        "builder": "DOCKERFILE",
-        "dockerfilePath": "Dockerfile"
-      }
-    }
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile",
+    "watchPatterns": [
+      "apps/api/**",
+      "packages/**",
+      "Dockerfile",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "tsconfig.base.json"
+    ]
   }
 }
