@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "[ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git diff $VERCEL_GIT_PREVIOUS_SHA HEAD --quiet -- apps/web/ packages/"
+  "ignoreCommand": "bash scripts/vercel-ignore.sh"
 }
