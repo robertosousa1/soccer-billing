@@ -1,0 +1,4 @@
+{
+  "rootDirectory": "apps/web",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/web/ packages/"
+}
