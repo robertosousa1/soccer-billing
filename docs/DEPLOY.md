@@ -78,25 +78,23 @@ O `prebuild` compila `@pelada/core` antes do `next build`, necessário porque a 
 ```json
 {
   "$schema": "https://railway.com/railway.schema.json",
-  "services": {
-    "api": {
-      "watchPatterns": [
-        "apps/api/**",
-        "packages/**",
-        "Dockerfile",
-        "package.json",
-        "pnpm-lock.yaml",
-        "pnpm-workspace.yaml",
-        "tsconfig.base.json"
-      ],
-      "build": {
-        "builder": "DOCKERFILE",
-        "dockerfilePath": "Dockerfile"
-      }
-    }
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile",
+    "watchPatterns": [
+      "apps/api/**",
+      "packages/**",
+      "Dockerfile",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "tsconfig.base.json"
+    ]
   }
 }
 ```
+
+> `watchPatterns` fica dentro de `build`, não no nível do serviço — essa é a estrutura flat que o config-as-code do Railway reconhece. O wrapper `services: { api: ... }` não é suportado para serviços únicos.
 
 **Por que `watchPatterns` inclui arquivos da raiz:** mudanças no `Dockerfile`, `pnpm-lock.yaml` ou `tsconfig.base.json` afetam o build da API e precisam disparar deploy.
 
