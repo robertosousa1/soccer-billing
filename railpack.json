@@ -1,8 +1,0 @@
-{
-  "build": {
-    "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @pelada/core build && pnpm --filter @pelada/api build"
-  },
-  "deploy": {
-    "startCommand": "node apps/api/dist/server.js"
-  }
-}
