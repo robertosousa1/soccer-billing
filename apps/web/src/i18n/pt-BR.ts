@@ -77,7 +77,7 @@ export const ptBR = {
     semLinhas: "Envie um arquivo para começar.",
     semPagamentos: "Nenhum pagamento lançado ainda.",
     processando: "Processando arquivo...",
-    saida: "Saída",
+    saida: "Outro",
     entrada: "Entrada",
     telefone: "Telefone",
     duplicadasAviso: "Pagamentos já importados anteriormente — para editar, acesse Pagamentos",

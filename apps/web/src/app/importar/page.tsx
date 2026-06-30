@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, GitMerge, ChevronUp, ChevronDown, ChevronRight } from "lucide-react";
+import { Pencil, Trash2, GitMerge, ChevronUp, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { addMonths, toTitle, ymOf } from "@pelada/core";
 import { PageShell } from "@/components/templates/PageShell";
 import { Badge } from "@/components/atoms/Badge";
 import { Button } from "@/components/atoms/Button";
 import { Input } from "@/components/atoms/Input";
 import { AlertBanner } from "@/components/molecules/AlertBanner";
+import { Select } from "@/components/atoms/Select";
 import { ImportModal } from "@/components/organisms/ImportModal";
 import { ManualTransactionModal } from "@/components/organisms/ManualTransactionModal";
 import { TransactionEditor } from "@/components/organisms/TransactionEditor";
@@ -45,6 +46,12 @@ export default function PagamentosPage() {
   const [mergingPayerId, setMergingPayerId] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [filtroNome, setFiltroNome] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState<"" | "entrada" | "saida">("");
+  const [filtroOrigem, setFiltroOrigem] = useState<"" | "IMPORTACAO" | "MANUAL">("");
+  const [pagina, setPagina] = useState(1);
+  const PAGE_SIZE = 15;
+
   function flashSuccess(message: string) {
     setSuccess(message);
     setTimeout(() => setSuccess(null), 3000);
@@ -75,6 +82,10 @@ export default function PagamentosPage() {
     getCompetenciaRange(token, current.id).then(setRange);
   }, [token, current]);
 
+  useEffect(() => {
+    setPagina(1);
+  }, [filtroNome, filtroTipo, filtroOrigem, competencia]);
+
   async function handleSave(data: {
     data?: string;
     valor?: number;
@@ -102,6 +113,15 @@ export default function PagamentosPage() {
 
   const paymentsDaCompetencia = payments.filter((p) => p.competencia === competencia);
   const elegíveisParaAbono = report?.mensalistas.filter((m) => !m.pago && !m.abonado) ?? [];
+
+  const paymentsFiltrados = paymentsDaCompetencia
+    .filter((p) => !filtroNome || p.nomeOriginal.toLowerCase().includes(filtroNome.toLowerCase()))
+    .filter((p) => !filtroTipo || (filtroTipo === "saida" ? p.isOutflow : !p.isOutflow))
+    .filter((p) => !filtroOrigem || p.origem === filtroOrigem);
+
+  const totalPaginas = Math.max(1, Math.ceil(paymentsFiltrados.length / PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paymentsPagina = paymentsFiltrados.slice((paginaAtual - 1) * PAGE_SIZE, paginaAtual * PAGE_SIZE);
 
   return (
     <PageShell>
@@ -234,97 +254,160 @@ export default function PagamentosPage() {
 
           {/* Transações da competência */}
           <section>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-3 space-y-2">
               <h2 className="font-display text-lg">{ptBR.importar.pagamentosTitulo}</h2>
+              <div className="flex items-center justify-end gap-2">
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={filtroNome}
+                  onChange={(e) => setFiltroNome(e.target.value)}
+                  className="w-60"
+                />
+                <Select
+                  value={filtroTipo}
+                  onChange={(e) => setFiltroTipo(e.target.value as "" | "entrada" | "saida")}
+                  className="w-auto"
+                >
+                  <option value="">Tipo: todos</option>
+                  <option value="entrada">Entradas</option>
+                  <option value="saida">Saídas</option>
+                </Select>
+                <Select
+                  value={filtroOrigem}
+                  onChange={(e) => setFiltroOrigem(e.target.value as "" | "IMPORTACAO" | "MANUAL")}
+                  className="w-auto"
+                >
+                  <option value="">Origem: todas</option>
+                  <option value="IMPORTACAO">{ptBR.importar.origemImportacao}</option>
+                  <option value="MANUAL">{ptBR.importar.origemManual}</option>
+                </Select>
+              </div>
             </div>
 
             {paymentsDaCompetencia.length === 0 ? (
               <p className="text-sm text-muted">{ptBR.importar.semPagamentos}</p>
+            ) : paymentsFiltrados.length === 0 ? (
+              <p className="text-sm text-muted">Nenhum pagamento encontrado com os filtros aplicados.</p>
             ) : (
-              <div className="overflow-x-auto rounded-card border border-line bg-card shadow-card">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                      <th className="px-4 py-3">Data</th>
-                      <th className="px-4 py-3">Nome</th>
-                      <th className="px-4 py-3">Valor</th>
-                      <th className="px-4 py-3">Categoria</th>
-                      <th className="px-4 py-3">{ptBR.importar.origem}</th>
-                      <th className="px-4 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paymentsDaCompetencia.map((p) => (
-                      <tr
-                        key={p.id}
-                        className={`border-b border-line last:border-0 hover:bg-chalk ${p.ignorada ? "opacity-50" : ""}`}
-                      >
-                        <td className="px-4 py-3 whitespace-nowrap">{formatDataBR(p.data)}</td>
-                        <td className="px-4 py-3">{toTitle(p.nomeOriginal)}</td>
-                        <td className={`px-4 py-3 tabular font-semibold ${p.isOutflow ? "text-clay" : "text-pitch"}`}>
-                          {p.valor}
-                        </td>
-                        <td className="px-4 py-3">
-                          {p.isOutflow ? (
-                            <Badge variant={p.outflowCategory === "QUADRA" ? "quadra" : "saida"}>
-                              {p.outflowCategory === "QUADRA" ? "Pagamento da Quadra" : "Saída"}
-                            </Badge>
-                          ) : (
-                            <div className="flex flex-col gap-1">
-                              {p.cotas.map((c, i) => (
-                                <span key={i} className="flex items-center gap-1 text-xs text-muted">
-                                  {ptBR.importar.categoriaCota[c.categoria]}
-                                  {c.payerNome ? ` · ${toTitle(c.payerNome)}` : ""}
-                                  {c.payerId && (
-                                    <button
-                                      type="button"
-                                      title={ptBR.pagantes.mesclarTitulo}
-                                      aria-label={ptBR.pagantes.mesclarTitulo}
-                                      onClick={() => setMergingPayerId(c.payerId)}
-                                      className="text-muted hover:text-pitch"
-                                    >
-                                      <GitMerge className="h-3 w-3" />
-                                    </button>
-                                  )}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant={p.origem === "IMPORTACAO" ? "importacao" : "manual"}>
-                            {p.origem === "IMPORTACAO" ? ptBR.importar.origemImportacao : ptBR.importar.origemManual}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="!px-2"
-                              title={ptBR.importar.editarPagamento}
-                              aria-label={ptBR.importar.editarPagamento}
-                              onClick={() => setEditing(p)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              className="!px-2"
-                              title={ptBR.importar.excluirPagamento}
-                              aria-label={ptBR.importar.excluirPagamento}
-                              onClick={() => setDeleting(p)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto rounded-card border border-line bg-card shadow-card">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+                        <th className="px-4 py-3">Data</th>
+                        <th className="px-4 py-3">Nome</th>
+                        <th className="px-4 py-3">Valor</th>
+                        <th className="px-4 py-3">Categoria</th>
+                        <th className="px-4 py-3">{ptBR.importar.origem}</th>
+                        <th className="px-4 py-3" />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {paymentsPagina.map((p) => (
+                        <tr
+                          key={p.id}
+                          className={`border-b border-line last:border-0 hover:bg-chalk ${p.ignorada ? "opacity-50" : ""}`}
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap">{formatDataBR(p.data)}</td>
+                          <td className="px-4 py-3">{toTitle(p.nomeOriginal)}</td>
+                          <td className={`px-4 py-3 tabular font-semibold ${p.isOutflow ? "text-clay" : "text-pitch"}`}>
+                            {p.valor}
+                          </td>
+                          <td className="px-4 py-3">
+                            {p.isOutflow ? (
+                              <Badge variant={p.outflowCategory === "QUADRA" ? "quadra" : "saida"}>
+                                {p.outflowCategory === "QUADRA" ? "Pagamento da Quadra" : "Outro"}
+                              </Badge>
+                            ) : (
+                              <div className="flex flex-col gap-1">
+                                {p.cotas.map((c, i) => (
+                                  <span key={i} className="flex items-center gap-1 text-xs text-muted">
+                                    {ptBR.importar.categoriaCota[c.categoria]}
+                                    {c.payerNome ? ` · ${toTitle(c.payerNome)}` : ""}
+                                    {c.payerId && (
+                                      <button
+                                        type="button"
+                                        title={ptBR.pagantes.mesclarTitulo}
+                                        aria-label={ptBR.pagantes.mesclarTitulo}
+                                        onClick={() => setMergingPayerId(c.payerId)}
+                                        className="text-muted hover:text-pitch"
+                                      >
+                                        <GitMerge className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant={p.origem === "IMPORTACAO" ? "importacao" : "manual"}>
+                              {p.origem === "IMPORTACAO" ? ptBR.importar.origemImportacao : ptBR.importar.origemManual}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="!px-2"
+                                title={ptBR.importar.editarPagamento}
+                                aria-label={ptBR.importar.editarPagamento}
+                                onClick={() => setEditing(p)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                className="!px-2"
+                                title={ptBR.importar.excluirPagamento}
+                                aria-label={ptBR.importar.excluirPagamento}
+                                onClick={() => setDeleting(p)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalPaginas > 1 && (
+                  <div className="mt-3 flex items-center justify-between text-sm text-muted">
+                    <span>
+                      {((paginaAtual - 1) * PAGE_SIZE) + 1}–{Math.min(paginaAtual * PAGE_SIZE, paymentsFiltrados.length)} de {paymentsFiltrados.length}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="!px-2"
+                        disabled={paginaAtual <= 1}
+                        onClick={() => setPagina((p) => p - 1)}
+                        aria-label="Página anterior"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="px-2 tabular">
+                        {paginaAtual} / {totalPaginas}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="!px-2"
+                        disabled={paginaAtual >= totalPaginas}
+                        onClick={() => setPagina((p) => p + 1)}
+                        aria-label="Próxima página"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>

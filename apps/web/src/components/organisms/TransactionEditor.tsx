@@ -80,7 +80,7 @@ export function TransactionEditor({ transaction, onSave, onClose }: TransactionE
               onChange={(e) => setOutflowCategory(e.target.value as "QUADRA" | "OUTRA_SAIDA")}
             >
               <option value="QUADRA">Pagamento da Quadra</option>
-              <option value="OUTRA_SAIDA">Saída</option>
+              <option value="OUTRA_SAIDA">Outro</option>
             </Select>
           )}
           {isManual && (

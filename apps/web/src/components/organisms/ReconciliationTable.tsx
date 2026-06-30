@@ -117,7 +117,7 @@ export function ReconciliationTable({ linhas, onChange, valorAvulso, valorMensal
               }
             >
               <option value="QUADRA">Pagamento da Quadra</option>
-              <option value="OUTRA_SAIDA">Saída</option>
+              <option value="OUTRA_SAIDA">Outro</option>
             </Select>
           ) : (
             <div className="flex flex-col gap-1">
