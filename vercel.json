@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "git diff ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD --quiet -- apps/web/ packages/"
+  "ignoreCommand": "git diff ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD --quiet -- apps/web/ packages/ || exit 1"
 }
