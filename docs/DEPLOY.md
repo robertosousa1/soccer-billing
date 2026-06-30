@@ -181,3 +181,4 @@ git push origin main
 | Railway: `No changes to watched files` | Arquivo alterado não está nos `watchPatterns` | Adicionar o padrão em `railway.json` |
 | Railway: `Cannot find module dist/server.js` | Build falhou silenciosamente ou Dockerfile antigo | Verificar build logs; o `railway.json` deve ter `"builder": "DOCKERFILE"` |
 | Railway: `DATABASE_URL ausente` | Variável não configurada | Adicionar em Variables ou linkar serviço PostgreSQL via Connect |
+
