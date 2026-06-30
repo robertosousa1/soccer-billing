@@ -1,7 +1,0 @@
-{
-  "/importar/page": "app/importar/page.js",
-  "/pagantes/page": "app/pagantes/page.js",
-  "/peladas/page": "app/peladas/page.js",
-  "/configuracoes/page": "app/configuracoes/page.js",
-  "/painel/page": "app/painel/page.js"
-}
