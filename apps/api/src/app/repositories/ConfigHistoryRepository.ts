@@ -10,13 +10,15 @@ export class ConfigHistoryRepository {
 
   async upsertMany(peladaId: string, competencias: string[], values: SnapshotValues): Promise<void> {
     await this.prisma.$transaction(
-      competencias.map((competencia) =>
-        this.prisma.configHistory.upsert({
-          where: { peladaId_competencia: { peladaId, competencia } },
-          create: { peladaId, competencia, ...values },
-          update: values,
-        }),
-      ),
+      async (tx) => {
+        for (const competencia of competencias) {
+          await tx.configHistory.upsert({
+            where: { peladaId_competencia: { peladaId, competencia } },
+            create: { peladaId, competencia, ...values },
+            update: values,
+          });
+        }
+      },
       { timeout: 30000, maxWait: 10000 },
     );
   }
