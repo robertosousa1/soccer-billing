@@ -107,6 +107,13 @@
 - [ ] 🟡 PWA (manifest + service worker básico para instalação)
 - [ ] 🟢 Layout otimizado para telas pequenas (tabelas com scroll horizontal)
 
+### Infra
+- [ ] 🟢 Substituir Railway Bucket pelo AWS S3 
+- [ ] 🟢 Substituir Resend pelo AWS SES 
+- [ ] 🟢 Implementar PGCAT
+- [ ] 🟢 Implementar validação de texto para commits
+- [ ] 🟢 Implementar Skills de Security
+
 ---
 
 ## Ideias Livres
