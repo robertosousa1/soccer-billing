@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Trash2, RefreshCw, Clock } from "lucide-react";
+import { Trash2, RefreshCw, Clock, X } from "lucide-react";
 import { PageShell } from "@/components/templates/PageShell";
 import { Button } from "@/components/atoms/Button";
 import { Input } from "@/components/atoms/Input";
@@ -22,6 +22,7 @@ import {
 import {
   listPendingInvites,
   resendInvite,
+  cancelInvite,
   type PendingInviteDTO,
 } from "@/services/invites";
 
@@ -78,8 +79,9 @@ export default function MembrosPage() {
   // cooldown per invite id: timestamp when cooldown ends
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
   const [resending, setResending] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
-  const canManage = current?.role === "OWNER";
+  const canManage = current?.role === "OWNER" || current?.role === "ADMIN";
 
   async function reload() {
     if (!token || !current) return;
@@ -177,6 +179,20 @@ export default function MembrosPage() {
   function isCoolingDown(inviteId: string): boolean {
     const until = cooldowns[inviteId];
     return !!until && Date.now() < until;
+  }
+
+  async function handleCancel(invite: PendingInviteDTO) {
+    if (!token || !current) return;
+    setCancelling(invite.id);
+    try {
+      await cancelInvite(token, current.id, invite.id);
+      await reload();
+      flash(`Convite de ${invite.name} cancelado.`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Erro ao cancelar convite.");
+    } finally {
+      setCancelling(null);
+    }
   }
 
   return (
@@ -296,42 +312,46 @@ export default function MembrosPage() {
             </p>
           )}
 
-          {/* Convites pendentes — só OWNER */}
+          {/* Convites pendentes — OWNER e ADMIN */}
           {canManage && !loading && pendingInvites.length > 0 && (
             <div className="overflow-hidden rounded-card border border-line bg-card shadow-card">
               <div className="grid items-center gap-3 border-b border-line px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted"
-                style={{ gridTemplateColumns: "2.25rem 1fr 7rem 9rem 2.25rem" }}>
+                style={{ gridTemplateColumns: "2.25rem 1fr 6rem 7rem 2.25rem 2.25rem" }}>
                 <span />
-                <span>Convites pendentes</span>
-                <span className="text-right">Enviado em</span>
+                <span>Convites</span>
+                <span className="text-center">Status</span>
                 <span className="text-center">Perfil</span>
+                <span />
                 <span />
               </div>
               {pendingInvites.map((inv, idx) => {
                 const cooling = isCoolingDown(inv.id);
                 const roleCfg = ROLE_CONFIG[inv.role as MemberRole];
+                const isCancelled = inv.status === "CANCELADO";
+                const isExpired = inv.status === "EXPIRADO";
+                const statusCfg = {
+                  PENDENTE:  { label: "Pendente",  cor: "bg-sky-100 text-sky-700" },
+                  EXPIRADO:  { label: "Expirado",  cor: "bg-amber-100 text-amber-700" },
+                  CANCELADO: { label: "Cancelado", cor: "bg-red-100 text-red-700" },
+                }[inv.status];
                 return (
                   <div
                     key={inv.id}
                     className={`grid items-center gap-3 px-4 py-3.5 ${
                       idx < pendingInvites.length - 1 ? "border-b border-line" : ""
                     } hover:bg-chalk`}
-                    style={{ gridTemplateColumns: "2.25rem 1fr 7rem 9rem 2.25rem" }}
+                    style={{ gridTemplateColumns: "2.25rem 1fr 6rem 7rem 2.25rem 2.25rem" }}
                   >
-                    <Clock className="h-4 w-4 text-muted" />
+                    <Clock className={`h-4 w-4 ${isCancelled || isExpired ? "text-muted/50" : "text-muted"}`} />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{inv.name}</p>
+                      <p className={`truncate text-sm font-medium ${isCancelled ? "line-through text-muted" : ""}`}>{inv.name}</p>
                       <p className="truncate text-xs text-muted">{inv.email}</p>
                     </div>
-                    <p className="text-right text-xs text-muted">
-                      {new Date(inv.lastSentAt).toLocaleString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
+                    <div className="flex justify-center">
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusCfg.cor}`}>
+                        {statusCfg.label}
+                      </span>
+                    </div>
                     <div className="flex justify-center">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${roleCfg?.cor ?? "bg-chalk text-muted"}`}>
                         {roleCfg?.label ?? inv.role}
@@ -341,12 +361,23 @@ export default function MembrosPage() {
                       variant="default"
                       size="sm"
                       className="!px-2"
-                      disabled={cooling || resending === inv.id}
+                      disabled={cooling || resending === inv.id || isCancelled}
                       loading={resending === inv.id}
                       onClick={() => handleResend(inv)}
-                      title={cooling ? "Aguarde 1 minuto para reenviar" : "Reenviar convite"}
+                      title={isCancelled ? "Convite cancelado" : cooling ? "Aguarde 1 minuto para reenviar" : "Reenviar convite"}
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="!px-2"
+                      disabled={isCancelled || cancelling === inv.id}
+                      loading={cancelling === inv.id}
+                      onClick={() => handleCancel(inv)}
+                      title={isCancelled ? "Convite já cancelado" : "Cancelar convite"}
+                    >
+                      <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 );

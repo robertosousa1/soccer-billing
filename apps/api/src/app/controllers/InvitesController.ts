@@ -8,6 +8,7 @@ import { PeladasRepository } from "../repositories/PeladasRepository";
 import { AuditEntryRepository } from "../repositories/AuditEntryRepository";
 import { ActivateInviteService } from "../services/ActivateInviteService";
 import { ResendInviteService } from "../services/ResendInviteService";
+import { CancelInviteService } from "../services/CancelInviteService";
 import type { PeladaScopedRequest } from "../middlewares/ensureMember";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -64,17 +65,34 @@ export class InvitesController {
 
   async listPending(req: PeladaScopedRequest, res: Response): Promise<void> {
     const invites = await new UserInviteRepository(prisma).findPendingByPelada(req.params.peladaId);
+    const now = new Date();
     res.status(200).json(
-      invites.map((i) => ({
-        id: i.id,
-        email: i.email,
-        name: i.name,
-        role: i.role,
-        lastSentAt: i.lastSentAt.toISOString(),
-        expiresAt: i.expiresAt.toISOString(),
-        createdAt: i.createdAt.toISOString(),
-      })),
+      invites.map((i) => {
+        let status: "PENDENTE" | "EXPIRADO" | "CANCELADO" = "PENDENTE";
+        if (i.cancelledAt) status = "CANCELADO";
+        else if (i.expiresAt < now) status = "EXPIRADO";
+        return {
+          id: i.id,
+          email: i.email,
+          name: i.name,
+          role: i.role,
+          status,
+          lastSentAt: i.lastSentAt.toISOString(),
+          expiresAt: i.expiresAt.toISOString(),
+          createdAt: i.createdAt.toISOString(),
+        };
+      }),
     );
+  }
+
+  async cancel(req: PeladaScopedRequest, res: Response): Promise<void> {
+    const { inviteId } = req.params;
+    const service = new CancelInviteService(
+      new UserInviteRepository(prisma),
+      new AuditEntryRepository(prisma),
+    );
+    await service.execute(req.params.peladaId, inviteId, req.userId ?? null);
+    res.status(204).send();
   }
 
   async resend(req: PeladaScopedRequest, res: Response): Promise<void> {

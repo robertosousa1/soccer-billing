@@ -84,6 +84,7 @@ model Pelada {
   abonos        PayerAbono[]
   auditEntries  AuditEntry[]
   invites       UserInvite[]
+  archivedAt    DateTime?
   deletedAt     DateTime?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -102,6 +103,7 @@ model UserInvite {
   expiresAt   DateTime
   lastSentAt  DateTime
   usedAt      DateTime?
+  cancelledAt DateTime?
   createdAt   DateTime   @default(now())
 
   @@index([token])

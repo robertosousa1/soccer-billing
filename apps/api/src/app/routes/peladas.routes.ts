@@ -63,5 +63,27 @@ peladasRouter.post(
   (req, res, next) =>
     invitesController.resend(req as Parameters<typeof invitesController.resend>[0], res).catch(next),
 );
+peladasRouter.delete(
+  "/:peladaId/invites/:inviteId",
+  ensureMember,
+  authorize("MANAGE_MEMBERS"),
+  (req, res, next) =>
+    invitesController.cancel(req as Parameters<typeof invitesController.cancel>[0], res).catch(next),
+);
+
+peladasRouter.post("/:peladaId/archive", ensureMember, authorize("RENAME_OR_DELETE_PELADA"), (req, res, next) =>
+  peladasController.archive(req as Parameters<typeof peladasController.archive>[0], res).catch(next),
+);
+peladasRouter.post("/:peladaId/unarchive", ensureMember, authorize("RENAME_OR_DELETE_PELADA"), (req, res, next) =>
+  peladasController.unarchive(req as Parameters<typeof peladasController.unarchive>[0], res).catch(next),
+);
+peladasRouter.post(
+  "/:peladaId/transfer-ownership",
+  ensureMember,
+  authorize("RENAME_OR_DELETE_PELADA"),
+  validate({ body: z.object({ newOwnerUserId: z.string().uuid() }) }),
+  (req, res, next) =>
+    peladasController.transferOwnership(req as Parameters<typeof peladasController.transferOwnership>[0], res).catch(next),
+);
 
 export { peladasRouter };

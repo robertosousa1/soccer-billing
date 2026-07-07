@@ -18,6 +18,7 @@ export interface PendingInviteDTO {
   email: string;
   name: string;
   role: string;
+  status: "PENDENTE" | "EXPIRADO" | "CANCELADO";
   lastSentAt: string;
   expiresAt: string;
   createdAt: string;
@@ -43,5 +44,12 @@ export function resendInvite(authToken: string, peladaId: string, email: string)
     method: "POST",
     token: authToken,
     body: { email },
+  });
+}
+
+export function cancelInvite(authToken: string, peladaId: string, inviteId: string): Promise<void> {
+  return apiFetch(`/peladas/${peladaId}/invites/${inviteId}`, {
+    method: "DELETE",
+    token: authToken,
   });
 }

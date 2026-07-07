@@ -6,6 +6,7 @@ import type { AuthenticatedRequest } from "./ensureAuthenticated";
 
 export interface PeladaScopedRequest extends AuthenticatedRequest {
   peladaRole?: MemberRole;
+  peladaArchivedAt?: Date | null;
 }
 
 export async function ensureMember(
@@ -21,7 +22,7 @@ export async function ensureMember(
       where: { peladaId_userId: { peladaId, userId: req.userId } },
       include: {
         user: { select: { deletedAt: true } },
-        pelada: { select: { deletedAt: true } },
+        pelada: { select: { deletedAt: true, archivedAt: true } },
       },
     });
     if (
@@ -34,6 +35,7 @@ export async function ensureMember(
     }
 
     req.peladaRole = membership.role;
+    req.peladaArchivedAt = membership.pelada.archivedAt;
     next();
   } catch (err) {
     next(err);

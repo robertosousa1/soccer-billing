@@ -18,6 +18,14 @@ export class PeladasRepository {
     return this.prisma.pelada.update({ where: { id }, data });
   }
 
+  archive(id: string): Promise<Pelada> {
+    return this.prisma.pelada.update({ where: { id }, data: { archivedAt: new Date() } });
+  }
+
+  unarchive(id: string): Promise<Pelada> {
+    return this.prisma.pelada.update({ where: { id }, data: { archivedAt: null } });
+  }
+
   softDelete(id: string): Promise<Pelada> {
     return this.prisma.pelada.update({ where: { id }, data: { deletedAt: new Date() } });
   }

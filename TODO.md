@@ -36,13 +36,13 @@
 - [ ] 🟢 Log de IPs nas tentativas de login
 
 ### Membros & Convites
-- [ ] 🟡 Cancelar convite pendente (OWNER pode revogar antes de expirar)
-- [ ] 🟡 Convite expira mas fica visível com status `EXPIRADO` na lista
+- [x] ✅ Cancelar convite pendente (OWNER pode revogar antes de expirar)
+- [x] ✅ Convite expira mas fica visível com status `EXPIRADO` na lista
 
 ### Pelada
-- [ ] 🔴 Auditoria: `PELADA_CRIADA`, `PELADA_EDITADA` (faltam no fluxo atual)
-- [ ] 🟡 Transferência de ownership (OWNER passa a pelada para outro membro)
-- [ ] 🟡 Arquivar pelada (soft-disable sem excluir dados)
+- [x] ✅ Auditoria: `PELADA_CRIADA`, `PELADA_EDITADA` (faltam no fluxo atual)
+- [x] ✅ Transferência de ownership (OWNER passa a pelada para outro membro)
+- [x] ✅ Arquivar pelada (soft-disable sem excluir dados)
 - [ ] 🟢 Imagem / avatar da pelada
 
 ### Financeiro
@@ -115,10 +115,8 @@
 
 - [ ] App mobile nativo (React Native) com Expo
 - [ ] Integração com Pix automático (webhook de confirmação de pagamento)
-- [ ] Multi-idioma (pt-BR + en-US)
 - [ ] Plano pago com limite de peladas / membros no free tier
 - [ ] API pública documentada (Swagger / OpenAPI)
-- [ ] CLI para importar extratos sem precisar da UI
 
 ---
 

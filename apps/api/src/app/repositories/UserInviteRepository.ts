@@ -21,6 +21,10 @@ export class UserInviteRepository {
     return this.prisma.userInvite.findUnique({ where: { token } });
   }
 
+  findById(id: string, peladaId: string): Promise<UserInvite | null> {
+    return this.prisma.userInvite.findFirst({ where: { id, peladaId } });
+  }
+
   findActiveByEmailAndPelada(email: string, peladaId: string): Promise<UserInvite | null> {
     return this.prisma.userInvite.findFirst({
       where: { email, peladaId, usedAt: null },
@@ -31,8 +35,14 @@ export class UserInviteRepository {
   findPendingByPelada(peladaId: string): Promise<UserInvite[]> {
     return this.prisma.userInvite.findMany({
       where: { peladaId, usedAt: null },
-      orderBy: { createdAt: "desc" },
+      orderBy: { lastSentAt: "desc" },
     });
+  }
+
+  cancel(id: string): Promise<void> {
+    return this.prisma.userInvite
+      .update({ where: { id }, data: { cancelledAt: new Date() } })
+      .then(() => undefined);
   }
 
   markUsed(id: string): Promise<void> {
