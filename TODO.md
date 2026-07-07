@@ -70,6 +70,8 @@
 ## Frontend
 
 ### UX & Usabilidade
+- [ ] 🔴 Inserir logo na aplicação
+- [ ] 🔴 Inserir logo no template dos emails
 - [ ] 🔴 Tela de onboarding para primeiro acesso (criar pelada + config inicial)
 - [ ] 🔴 Estado vazio com ilustração em todas as listas
 - [ ] 🟡 Confirmação antes de ações destrutivas (modal "tem certeza?")
