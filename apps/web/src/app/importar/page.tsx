@@ -119,7 +119,9 @@ export default function PagamentosPage() {
     flashSuccess(ptBR.importar.pagamentoExcluido);
   }
 
-  const podeAvancar = range.max !== null && addMonths(competencia, 1) <= range.max;
+  const hoje = ymOf(new Date().toISOString());
+  const maxNavegacao = range.max && range.max > hoje ? range.max : hoje;
+  const podeAvancar = addMonths(competencia, 1) <= maxNavegacao;
   const podeVoltar = range.min !== null && addMonths(competencia, -1) >= range.min;
 
   const paymentsDaCompetencia = payments.filter((p) => p.competencia === competencia);
@@ -145,7 +147,7 @@ export default function PagamentosPage() {
               value={competencia}
               onChange={(e) => setCompetencia(e.target.value)}
               min={range.min ?? undefined}
-              max={range.max ?? undefined}
+              max={maxNavegacao}
               className="w-40"
             />
             <div className="flex flex-col gap-0.5">

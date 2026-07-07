@@ -12,11 +12,13 @@ import { usePelada } from "@/contexts/PeladaContext";
 import { getAuditLog, type AuditEntryDTO, type AuditTipo } from "@/services/audit";
 
 const TIPO_CONFIG: Record<AuditTipo, { label: string; cor: string }> = {
-  JOGADOR_CRIADO:    { label: "Jogador criado",    cor: "bg-emerald-100 text-emerald-700" },
-  JOGADOR_EDITADO:   { label: "Jogador editado",   cor: "bg-blue-100 text-blue-700" },
-  PAGAMENTO_EDITADO: { label: "Pagamento editado", cor: "bg-amber-100 text-amber-700" },
-  ABONO_CONCEDIDO:   { label: "Abono concedido",   cor: "bg-purple-100 text-purple-700" },
-  ABONO_REMOVIDO:    { label: "Abono removido",    cor: "bg-red-100 text-red-700" },
+  JOGADOR_CRIADO:      { label: "Jogador criado",      cor: "bg-emerald-100 text-emerald-700" },
+  JOGADOR_EDITADO:     { label: "Jogador editado",     cor: "bg-blue-100 text-blue-700" },
+  PAGAMENTO_EDITADO:   { label: "Pagamento editado",   cor: "bg-amber-100 text-amber-700" },
+  ABONO_CONCEDIDO:     { label: "Abono concedido",     cor: "bg-purple-100 text-purple-700" },
+  ABONO_REMOVIDO:      { label: "Abono removido",      cor: "bg-red-100 text-red-700" },
+  CONFIG_ALTERADO:     { label: "Config alterada",     cor: "bg-orange-100 text-orange-700" },
+  RELATORIO_EXPORTADO: { label: "Relatório exportado", cor: "bg-slate-100 text-slate-600" },
 };
 
 export default function AuditoriaPage() {

@@ -11,6 +11,10 @@ const moneyInput = z.union([z.string(), z.number()]);
 
 configRouter.get("/", authorize("READ"), (req, res, next) => configController.show(req, res).catch(next));
 
+configRouter.get("/competencias", authorize("READ"), (req, res, next) =>
+  configController.listCompetencias(req, res).catch(next),
+);
+
 configRouter.put(
   "/",
   authorize("WRITE"),
@@ -27,6 +31,13 @@ configRouter.put(
     }),
   }),
   (req, res, next) => configController.update(req, res).catch(next),
+);
+
+configRouter.post(
+  "/snapshots",
+  authorize("WRITE"),
+  validate({ body: z.object({ competencias: z.array(z.string().regex(/^\d{4}-\d{2}$/)) }) }),
+  (req, res, next) => configController.applySnapshots(req, res).catch(next),
 );
 
 export { configRouter };

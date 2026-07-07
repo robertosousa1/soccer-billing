@@ -4,6 +4,7 @@ import { GetMonthlyReportService } from "../services/GetMonthlyReportService";
 import { ListDefaultersService } from "../services/ListDefaultersService";
 import { BuildChargeMessageService } from "../services/BuildChargeMessageService";
 import { BuildMonthlyReportPdfService } from "../services/BuildMonthlyReportPdfService";
+import { AuditEntryRepository } from "../repositories/AuditEntryRepository";
 import { PayersRepository } from "../repositories/PayersRepository";
 import { ConfigRepository } from "../repositories/ConfigRepository";
 import { TransactionsRepository } from "../repositories/TransactionsRepository";
@@ -22,9 +23,18 @@ export class ReportsController {
   }
 
   async pdf(req: PeladaScopedRequest, res: Response): Promise<void> {
-    const buffer = await new BuildMonthlyReportPdfService().execute(req.params.peladaId, req.params.competencia);
+    const { peladaId, competencia } = req.params;
+    const buffer = await new BuildMonthlyReportPdfService().execute(peladaId, competencia);
+
+    await new AuditEntryRepository(prisma).create({
+      peladaId,
+      userId: req.userId,
+      tipo: "RELATORIO_EXPORTADO",
+      sujeito: competencia,
+    });
+
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="resumo-${req.params.competencia}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="resumo-${competencia}.pdf"`);
     res.status(200).send(buffer);
   }
 

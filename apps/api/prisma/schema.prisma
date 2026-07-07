@@ -49,22 +49,25 @@ model User {
   payerHistoryEntries           PayerHistoryEntry[]
   transactionHistoryEntries     TransactionHistoryEntry[]
   abonosConcedidos              PayerAbono[]
+  auditEntries                  AuditEntry[]
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 }
 
 /// A pelada (grupo). Tem nome (parâmetro), config própria e dados escopados.
 model Pelada {
-  id           String         @id @default(uuid())
-  nome         String
-  members      PeladaMember[]
-  config       Config?
-  payers       Payer[]
-  imports      Import[]
-  transactions Transaction[]
-  abonos       PayerAbono[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String          @id @default(uuid())
+  nome          String
+  members       PeladaMember[]
+  config        Config?
+  configHistory ConfigHistory[]
+  payers        Payer[]
+  imports       Import[]
+  transactions  Transaction[]
+  abonos        PayerAbono[]
+  auditEntries  AuditEntry[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
 
 /// N:N entre User e Pelada, com papel.
@@ -99,6 +102,37 @@ model Config {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// Snapshot de valorAluguel e diaPagamentoQuadra por competência.
+/// Quando existe para um mês, o relatório usa esses valores em vez do Config atual.
+model ConfigHistory {
+  id                 String   @id @default(uuid())
+  pelada             Pelada   @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId           String
+  valorAluguel       Int
+  diaPagamentoQuadra Int
+  competencia        String   // "YYYY-MM"
+  createdAt          DateTime @default(now())
+
+  @@unique([peladaId, competencia])
+  @@index([peladaId])
+}
+
+/// Log genérico de auditoria: alterações de config, exportações de relatório, etc.
+model AuditEntry {
+  id         String   @id @default(uuid())
+  pelada     Pelada   @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId   String
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String?
+  tipo       String   // "CONFIG_ALTERADO" | "RELATORIO_EXPORTADO"
+  sujeito    String?  // competência, campo, etc.
+  alteracoes Json?    // [{campo, de, para}]
+  createdAt  DateTime @default(now())
+
+  @@index([peladaId, tipo])
+  @@index([peladaId, createdAt])
 }
 
 /// Nome/chave Pix como a quadra aparece no extrato.

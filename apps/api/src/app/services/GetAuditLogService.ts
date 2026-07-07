@@ -6,7 +6,9 @@ export type AuditTipo =
   | "JOGADOR_EDITADO"
   | "PAGAMENTO_EDITADO"
   | "ABONO_CONCEDIDO"
-  | "ABONO_REMOVIDO";
+  | "ABONO_REMOVIDO"
+  | "CONFIG_ALTERADO"
+  | "RELATORIO_EXPORTADO";
 
 export interface AuditEntryDTO {
   id: string;
@@ -27,7 +29,7 @@ export class GetAuditLogService {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(peladaId: string): Promise<AuditEntryDTO[]> {
-    const [payerHistory, txHistory, abonos] = await Promise.all([
+    const [payerHistory, txHistory, abonos, auditEntries] = await Promise.all([
       this.prisma.payerHistoryEntry.findMany({
         where: { payer: { peladaId } },
         include: {
@@ -52,6 +54,12 @@ export class GetAuditLogService {
           createdBy: { select: { name: true } },
           payer: { select: { nome: true } },
         },
+        orderBy: { createdAt: "desc" },
+        take: 300,
+      }),
+      this.prisma.auditEntry.findMany({
+        where: { peladaId },
+        include: { user: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
         take: 300,
       }),
@@ -98,6 +106,19 @@ export class GetAuditLogService {
         data: formatDateBR(e.createdAt),
         hora: toHora(e.createdAt),
         motivo: e.motivo,
+      });
+    }
+
+    for (const e of auditEntries) {
+      entries.push({
+        _ts: e.createdAt,
+        id: `ae-${e.id}`,
+        tipo: e.tipo as AuditTipo,
+        usuario: e.user?.name ?? "Sistema",
+        sujeito: e.sujeito ?? "—",
+        data: formatDateBR(e.createdAt),
+        hora: toHora(e.createdAt),
+        alteracoes: e.alteracoes as AuditEntryDTO["alteracoes"],
       });
     }
 

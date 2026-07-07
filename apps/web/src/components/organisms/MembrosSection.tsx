@@ -25,7 +25,7 @@ const ROLE_CONFIG: Record<MemberRole, { label: string; cor: string }> = {
 
 const ROLE_DESC: Record<MemberRole, string> = {
   OWNER:  "Acesso total, incluindo gerenciar membros",
-  ADMIN:  "Pode importar, editar dados e conceder abonos",
+  ADMIN:  "Pode importar, gerenciar pagamentos e jogadores",
   READER: "Somente leitura",
 };
 

@@ -5,7 +5,9 @@ export type AuditTipo =
   | "JOGADOR_EDITADO"
   | "PAGAMENTO_EDITADO"
   | "ABONO_CONCEDIDO"
-  | "ABONO_REMOVIDO";
+  | "ABONO_REMOVIDO"
+  | "CONFIG_ALTERADO"
+  | "RELATORIO_EXPORTADO";
 
 export interface AuditEntryDTO {
   id: string;

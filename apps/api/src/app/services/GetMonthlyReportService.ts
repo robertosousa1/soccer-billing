@@ -14,8 +14,9 @@ import { prisma } from "../../database/client";
 
 export class GetMonthlyReportService {
   async execute(peladaId: string, competencia: string) {
-    const [config, allTx, payers, typeChanges, abonos] = await Promise.all([
+    const [config, configSnap, allTx, payers, typeChanges, abonos] = await Promise.all([
       prisma.config.findUnique({ where: { peladaId } }),
+      prisma.configHistory.findUnique({ where: { peladaId_competencia: { peladaId, competencia } } }),
       prisma.transaction.findMany({ where: { peladaId }, include: { shares: true } }),
       prisma.payer.findMany({ where: { peladaId } }),
       prisma.payerTypeChange.findMany({ where: { payer: { peladaId } } }),
@@ -28,12 +29,13 @@ export class GetMonthlyReportService {
       vigenteDesde: c.vigenteDesde,
     }));
 
+    // Snapshot prevalece sobre config atual para valorAluguel e diaPagamentoQuadra.
     const coreConfig: CoreConfig | undefined = config
       ? {
           valorMensalidade: config.valorMensalidade,
           valorAvulso: config.valorAvulso,
-          valorAluguel: config.valorAluguel,
-          diaPagamentoQuadra: config.diaPagamentoQuadra,
+          valorAluguel: configSnap?.valorAluguel ?? config.valorAluguel,
+          diaPagamentoQuadra: configSnap?.diaPagamentoQuadra ?? config.diaPagamentoQuadra,
           identificadoresQuadra: [],
         }
       : undefined;
@@ -110,7 +112,7 @@ export class GetMonthlyReportService {
 
     return {
       competencia,
-      periodo: competenciaPeriodo(competencia, config?.diaPagamentoQuadra ?? 1),
+      periodo: competenciaPeriodo(competencia, configSnap?.diaPagamentoQuadra ?? config?.diaPagamentoQuadra ?? 1),
       entrou: formatBRL(report.totalEntradas),
       saiu: formatBRL(report.totalSaidas),
       saldo: formatBRL(report.saldo),
@@ -121,8 +123,8 @@ export class GetMonthlyReportService {
         paga: report.quadraPaga,
         total: formatBRL(report.totalQuadra),
         pagamentos: quadraTransactions.map((t) => ({ data: t.data, valor: formatBRL(Math.abs(t.valor)) })),
-        diaPagamento: config?.diaPagamentoQuadra ?? null,
-        valorReferencia: config ? formatBRL(config.valorAluguel) : null,
+        diaPagamento: configSnap?.diaPagamentoQuadra ?? config?.diaPagamentoQuadra ?? null,
+        valorReferencia: config ? formatBRL(configSnap?.valorAluguel ?? config.valorAluguel) : null,
       },
       mensalistas: corePayers
         .filter((p) => {
