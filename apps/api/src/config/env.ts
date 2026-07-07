@@ -21,4 +21,8 @@ export const env = {
   s3Endpoint: process.env.S3_ENDPOINT ?? "",
   sentryDsn: process.env.SENTRY_DSN ?? "",
   newRelicLicenseKey: process.env.NEW_RELIC_LICENSE_KEY ?? "",
+  emailApiKey: required("EMAIL_API_KEY", ""),
+  emailFrom: process.env.EMAIL_FROM ?? "noreply@pelada.app",
+  appUrl: process.env.APP_URL ?? "http://localhost:3000",
+  recaptchaSecret: process.env.RECAPTCHA_SECRET_KEY ?? "",
 };

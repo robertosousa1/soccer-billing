@@ -7,17 +7,22 @@ export interface MemberDTO {
   name: string;
   email: string;
   role: MemberRole;
+  lastLoginAt: string | null;
 }
 
 export function listMembers(token: string, peladaId: string) {
   return apiFetch<MemberDTO[]>(`/peladas/${peladaId}/members`, { token });
 }
 
-export function addMember(token: string, peladaId: string, email: string, role: MemberRole) {
-  return apiFetch<MemberDTO>(`/peladas/${peladaId}/members`, {
+export type AddMemberResult =
+  | MemberDTO
+  | { invited: true; email: string; name: string };
+
+export function addMember(token: string, peladaId: string, name: string, email: string, role: MemberRole) {
+  return apiFetch<AddMemberResult>(`/peladas/${peladaId}/members`, {
     method: "POST",
     token,
-    body: { email, role },
+    body: { name, email, role },
   });
 }
 
@@ -35,3 +40,4 @@ export function removeMember(token: string, peladaId: string, userId: string) {
     token,
   });
 }
+

@@ -41,7 +41,7 @@ export class ConfigController {
         return [{ campo: label, de: fmt(de as number | null), para: fmt(para as number) }];
       });
       if (alteracoes.length > 0) {
-        await new AuditEntryRepository(prisma).create({
+        new AuditEntryRepository(prisma).fire({
           peladaId: req.params.peladaId,
           userId: req.userId,
           tipo: "CONFIG_ALTERADO",

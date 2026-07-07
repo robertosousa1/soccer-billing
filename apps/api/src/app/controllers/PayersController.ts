@@ -3,6 +3,7 @@ import { normalizeName } from "@pelada/core";
 import { prisma } from "../../database/client";
 import { PayersRepository } from "../repositories/PayersRepository";
 import { PayerHistoryRepository } from "../repositories/PayerHistoryRepository";
+import { AuditEntryRepository } from "../repositories/AuditEntryRepository";
 import { ListPayersService } from "../services/ListPayersService";
 import { CreatePayerService } from "../services/CreatePayerService";
 import { UpdatePayerService } from "../services/UpdatePayerService";
@@ -41,8 +42,8 @@ export class PayersController {
   }
 
   async destroy(req: PeladaScopedRequest, res: Response): Promise<void> {
-    const service = new DeletePayerService(new PayersRepository(prisma));
-    await service.execute(req.params.peladaId, req.params.id);
+    const service = new DeletePayerService(new PayersRepository(prisma), new AuditEntryRepository(prisma));
+    await service.execute(req.params.peladaId, req.params.id, req.userId ?? null);
     res.status(204).send();
   }
 
@@ -75,6 +76,13 @@ export class PayersController {
       const created = await prisma.payerAlias.create({
         data: { peladaId, payerId, alias, aliasNorm },
       });
+      new AuditEntryRepository(prisma).fire({
+        peladaId,
+        userId: req.userId ?? null,
+        tipo: "APELIDO_ADICIONADO",
+        sujeito: payer.nome,
+        alteracoes: [{ campo: "Apelido", de: null, para: alias }],
+      });
       res.status(201).json({ id: created.id, alias: created.alias });
     } catch (err: unknown) {
       if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "P2002") {
@@ -88,9 +96,16 @@ export class PayersController {
     const { peladaId, id: payerId, aliasId } = req.params;
     const payer = await new PayersRepository(prisma).findById(peladaId, payerId);
     if (!payer) throw new AppError("Pagante não encontrado", 404);
-    const alias = await prisma.payerAlias.findFirst({ where: { id: aliasId, payerId, peladaId } });
+    const alias = await prisma.payerAlias.findFirst({ where: { id: aliasId, payerId, peladaId, deletedAt: null } });
     if (!alias) throw new AppError("Apelido não encontrado", 404);
-    await prisma.payerAlias.delete({ where: { id: aliasId } });
+    await prisma.payerAlias.update({ where: { id: aliasId }, data: { deletedAt: new Date() } });
+    new AuditEntryRepository(prisma).fire({
+      peladaId,
+      userId: req.userId ?? null,
+      tipo: "APELIDO_REMOVIDO",
+      sujeito: payer.nome,
+      alteracoes: [{ campo: "Apelido", de: alias.alias, para: null }],
+    });
     res.status(204).send();
   }
 }

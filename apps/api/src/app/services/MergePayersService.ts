@@ -76,7 +76,9 @@ export class MergePayersService {
         // histórico de edições: vira apêndice do destino (sem checagem de colisão — é só log).
         await tx.payerHistoryEntry.updateMany({ where: { payerId: source.id }, data: { payerId: target.id } });
 
-        await tx.payer.delete({ where: { id: source.id } });
+        // soft-delete aliases that collided (remained on source) to free the unique slot
+        await tx.payerAlias.updateMany({ where: { payerId: source.id, deletedAt: null }, data: { deletedAt: new Date() } });
+        await tx.payer.update({ where: { id: source.id }, data: { deletedAt: new Date() } });
       }
 
       // desde = menor competência entre as mensalidades não ignoradas do pagante final, já

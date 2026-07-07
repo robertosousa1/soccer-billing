@@ -50,8 +50,25 @@ model User {
   transactionHistoryEntries     TransactionHistoryEntry[]
   abonosConcedidos              PayerAbono[]
   auditEntries                  AuditEntry[]
+  passwordResets                PasswordReset[]
+  lastLoginAt         DateTime?
+  deletedAt           DateTime?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
+}
+
+/// Token de redefinição de senha. Expira em 1 hora; uso único.
+model PasswordReset {
+  id        String    @id @default(uuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId])
 }
 
 /// A pelada (grupo). Tem nome (parâmetro), config própria e dados escopados.
@@ -66,8 +83,29 @@ model Pelada {
   transactions  Transaction[]
   abonos        PayerAbono[]
   auditEntries  AuditEntry[]
+  invites       UserInvite[]
+  deletedAt     DateTime?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+}
+
+/// Convite de membro pendente. Criado ao adicionar um e-mail sem conta; o convidado
+/// define a senha via link e já entra na pelada com o papel definido pelo organizador.
+model UserInvite {
+  id          String     @id @default(uuid())
+  pelada      Pelada     @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  peladaId    String
+  email       String
+  name        String
+  role        MemberRole
+  token       String     @unique
+  expiresAt   DateTime
+  lastSentAt  DateTime
+  usedAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([token])
+  @@index([peladaId, email])
 }
 
 /// N:N entre User e Pelada, com papel.
@@ -79,6 +117,8 @@ model PeladaMember {
   userId    String
   role      MemberRole @default(READER)
   createdAt DateTime   @default(now())
+
+  deletedAt DateTime?
 
   @@unique([peladaId, userId])
   @@index([userId])
@@ -158,6 +198,7 @@ model Payer {
   typeChanges PayerTypeChange[]
   history     PayerHistoryEntry[]
   abonos      PayerAbono[]
+  deletedAt   DateTime?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
@@ -176,6 +217,7 @@ model PayerAbono {
   motivo          String
   createdBy       User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdByUserId String?
+  deletedAt       DateTime?
   createdAt       DateTime @default(now())
 
   @@unique([payerId, competencia])
@@ -225,8 +267,9 @@ model PayerAlias {
   peladaId  String // denormalizado para garantir unicidade por pelada
   alias     String
   aliasNorm String
-  payer     Payer  @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  payer     Payer     @relation(fields: [payerId], references: [id], onDelete: Cascade)
   payerId   String
+  deletedAt DateTime?
 
   @@unique([peladaId, aliasNorm])
   @@index([payerId])
@@ -267,6 +310,7 @@ model Transaction {
   history         TransactionHistoryEntry[]
   import          Import?          @relation(fields: [importId], references: [id])
   importId        String?
+  deletedAt       DateTime?
   createdAt       DateTime         @default(now())
 
   @@unique([peladaId, chaveNatural])

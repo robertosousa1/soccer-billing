@@ -9,24 +9,36 @@ export class PayerAbonoRepository {
     motivo: string;
     createdByUserId: string | null;
   }) {
-    const exists = await prisma.payerAbono.findUnique({
+    const existing = await prisma.payerAbono.findUnique({
       where: { payerId_competencia: { payerId: data.payerId, competencia: data.competencia } },
     });
-    if (exists) throw new AppError("Já existe um abono para este pagante nesta competência.", 409);
+    if (existing && existing.deletedAt === null) {
+      throw new AppError("Já existe um abono para este pagante nesta competência.", 409);
+    }
+    if (existing) {
+      // restore soft-deleted abono
+      return prisma.payerAbono.update({
+        where: { id: existing.id },
+        data: { motivo: data.motivo, createdByUserId: data.createdByUserId, deletedAt: null },
+      });
+    }
     return prisma.payerAbono.create({ data });
   }
 
   async delete(payerId: string, competencia: string) {
-    const exists = await prisma.payerAbono.findUnique({
+    const existing = await prisma.payerAbono.findUnique({
       where: { payerId_competencia: { payerId, competencia } },
     });
-    if (!exists) throw new AppError("Abono não encontrado.", 404);
-    await prisma.payerAbono.delete({ where: { payerId_competencia: { payerId, competencia } } });
+    if (!existing || existing.deletedAt !== null) throw new AppError("Abono não encontrado.", 404);
+    await prisma.payerAbono.update({
+      where: { payerId_competencia: { payerId, competencia } },
+      data: { deletedAt: new Date() },
+    });
   }
 
   findByPeladaAndCompetencia(peladaId: string, competencia: string) {
     return prisma.payerAbono.findMany({
-      where: { peladaId, competencia },
+      where: { peladaId, competencia, deletedAt: null },
       select: { payerId: true, motivo: true },
     });
   }

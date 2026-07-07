@@ -29,6 +29,7 @@ export class AuthenticateUserService {
       expiresIn: authConfig.expiresIn as SignOptions["expiresIn"],
     };
     const token = jwt.sign({}, authConfig.secret, signOptions);
+    await this.usersRepository.updateLastLoginAt(user.id);
 
     return { token, user: { id: user.id, name: user.name, email: user.email } };
   }

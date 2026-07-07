@@ -19,8 +19,19 @@ export async function ensureMember(
 
     const membership = await prisma.peladaMember.findUnique({
       where: { peladaId_userId: { peladaId, userId: req.userId } },
+      include: {
+        user: { select: { deletedAt: true } },
+        pelada: { select: { deletedAt: true } },
+      },
     });
-    if (!membership) throw new AppError("Você não é membro desta pelada", 403);
+    if (
+      !membership ||
+      membership.deletedAt !== null ||
+      membership.user.deletedAt !== null ||
+      membership.pelada.deletedAt !== null
+    ) {
+      throw new AppError("Você não é membro desta pelada", 403);
+    }
 
     req.peladaRole = membership.role;
     next();

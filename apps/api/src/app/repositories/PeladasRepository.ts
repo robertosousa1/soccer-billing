@@ -4,12 +4,12 @@ export class PeladasRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   findById(id: string): Promise<Pelada | null> {
-    return this.prisma.pelada.findUnique({ where: { id } });
+    return this.prisma.pelada.findFirst({ where: { id, deletedAt: null } });
   }
 
   listForUser(userId: string) {
     return this.prisma.peladaMember.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null, pelada: { deletedAt: null } },
       include: { pelada: { include: { config: true } } },
     });
   }
@@ -18,7 +18,7 @@ export class PeladasRepository {
     return this.prisma.pelada.update({ where: { id }, data });
   }
 
-  delete(id: string): Promise<Pelada> {
-    return this.prisma.pelada.delete({ where: { id } });
+  softDelete(id: string): Promise<Pelada> {
+    return this.prisma.pelada.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 }

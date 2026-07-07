@@ -2,6 +2,7 @@ import { naturalKey } from "@pelada/core";
 import { AppError } from "../utils/AppError";
 import type { TransactionsRepository } from "../repositories/TransactionsRepository";
 import type { PayersRepository } from "../repositories/PayersRepository";
+import type { AuditEntryRepository } from "../repositories/AuditEntryRepository";
 
 interface Request {
   peladaId: string;
@@ -13,6 +14,7 @@ interface Request {
   payerId?: string;
   categoria?: "MENSALIDADE" | "AVULSO" | "CONTRIBUICAO" | "OUTRO";
   outflowCategory?: "QUADRA" | "OUTRA_SAIDA";
+  actorUserId?: string | null;
 }
 
 /** Registro manual de um lançamento (fora do fluxo de import de extrato). */
@@ -20,6 +22,7 @@ export class CreateTransactionService {
   constructor(
     private readonly transactionsRepository: TransactionsRepository,
     private readonly payersRepository: PayersRepository,
+    private readonly auditRepository: AuditEntryRepository,
   ) {}
 
   async execute(req: Request) {
@@ -39,7 +42,7 @@ export class CreateTransactionService {
     const chaveNatural = naturalKey({ data: req.data, hora: req.hora, nomeOriginal, valor: valorAssinado });
 
     try {
-      return await this.transactionsRepository.create({
+      const transaction = await this.transactionsRepository.create({
         peladaId: req.peladaId,
         data: req.data,
         hora: req.hora,
@@ -50,6 +53,20 @@ export class CreateTransactionService {
         outflowCategory: req.tipo === "SAIDA" ? req.outflowCategory! : null,
         share: req.tipo === "ENTRADA" ? { payerId: req.payerId!, categoria: req.categoria!, valor: req.valor } : null,
       });
+
+      this.auditRepository.fire({
+        peladaId: req.peladaId,
+        userId: req.actorUserId ?? null,
+        tipo: "PAGAMENTO_CRIADO",
+        sujeito: nomeOriginal,
+        alteracoes: [
+          { campo: "Data", de: null, para: req.data },
+          { campo: "Competência", de: null, para: req.competencia },
+          { campo: "Valor", de: null, para: String(valorAssinado) },
+        ],
+      });
+
+      return transaction;
     } catch (err) {
       if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
         throw new AppError("Já existe um lançamento idêntico (mesma data, hora, nome e valor).", 409);

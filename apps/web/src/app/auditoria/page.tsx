@@ -12,13 +12,24 @@ import { usePelada } from "@/contexts/PeladaContext";
 import { getAuditLog, type AuditEntryDTO, type AuditTipo } from "@/services/audit";
 
 const TIPO_CONFIG: Record<AuditTipo, { label: string; cor: string }> = {
-  JOGADOR_CRIADO:      { label: "Jogador criado",      cor: "bg-emerald-100 text-emerald-700" },
-  JOGADOR_EDITADO:     { label: "Jogador editado",     cor: "bg-blue-100 text-blue-700" },
-  PAGAMENTO_EDITADO:   { label: "Pagamento editado",   cor: "bg-amber-100 text-amber-700" },
-  ABONO_CONCEDIDO:     { label: "Abono concedido",     cor: "bg-purple-100 text-purple-700" },
-  ABONO_REMOVIDO:      { label: "Abono removido",      cor: "bg-red-100 text-red-700" },
-  CONFIG_ALTERADO:     { label: "Config alterada",     cor: "bg-orange-100 text-orange-700" },
-  RELATORIO_EXPORTADO: { label: "Relatório exportado", cor: "bg-slate-100 text-slate-600" },
+  JOGADOR_CRIADO:        { label: "Jogador criado",        cor: "bg-emerald-100 text-emerald-700" },
+  JOGADOR_EDITADO:       { label: "Jogador editado",       cor: "bg-blue-100 text-blue-700" },
+  JOGADOR_EXCLUIDO:      { label: "Jogador excluído",      cor: "bg-red-100 text-red-700" },
+  APELIDO_ADICIONADO:    { label: "Apelido adicionado",    cor: "bg-teal-100 text-teal-700" },
+  APELIDO_REMOVIDO:      { label: "Apelido removido",      cor: "bg-red-100 text-red-700" },
+  PAGAMENTO_CRIADO:      { label: "Pagamento criado",      cor: "bg-emerald-100 text-emerald-700" },
+  PAGAMENTO_EDITADO:     { label: "Pagamento editado",     cor: "bg-amber-100 text-amber-700" },
+  PAGAMENTO_EXCLUIDO:    { label: "Pagamento excluído",    cor: "bg-red-100 text-red-700" },
+  ABONO_CONCEDIDO:       { label: "Abono concedido",       cor: "bg-purple-100 text-purple-700" },
+  ABONO_REMOVIDO:        { label: "Abono removido",        cor: "bg-red-100 text-red-700" },
+  MEMBRO_ADICIONADO:     { label: "Membro adicionado",     cor: "bg-emerald-100 text-emerald-700" },
+  MEMBRO_REMOVIDO:       { label: "Membro removido",       cor: "bg-red-100 text-red-700" },
+  MEMBRO_PERFIL_ALTERADO:{ label: "Perfil alterado",       cor: "bg-blue-100 text-blue-700" },
+  CONVITE_ENVIADO:       { label: "Convite enviado",       cor: "bg-sky-100 text-sky-700" },
+  CONVITE_REENVIADO:     { label: "Convite reenviado",     cor: "bg-sky-100 text-sky-700" },
+  CONVITE_ATIVADO:       { label: "Convite ativado",       cor: "bg-emerald-100 text-emerald-700" },
+  CONFIG_ALTERADO:       { label: "Config alterada",       cor: "bg-orange-100 text-orange-700" },
+  RELATORIO_EXPORTADO:   { label: "Relatório exportado",   cor: "bg-slate-100 text-slate-600" },
 };
 
 export default function AuditoriaPage() {

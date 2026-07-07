@@ -10,6 +10,7 @@ export class ListMembersService {
       name: m.user.name,
       email: m.user.email,
       role: m.role,
+      lastLoginAt: m.user.lastLoginAt?.toISOString() ?? null,
     }));
   }
 }

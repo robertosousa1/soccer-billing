@@ -8,7 +8,7 @@ const sessionsController = new SessionsController();
 
 sessionsRouter.post(
   "/",
-  validate({ body: z.object({ email: z.string().email(), password: z.string().min(1) }) }),
+  validate({ body: z.object({ email: z.string().email(), password: z.string().min(1), recaptchaToken: z.string() }) }),
   (req, res, next) => sessionsController.create(req, res).catch(next),
 );
 

@@ -23,6 +23,11 @@ export class AuditEntryRepository {
     });
   }
 
+  /** Fire-and-forget: não bloqueia a request; erros são logados mas não propagados. */
+  fire(params: CreateParams): void {
+    this.create(params).catch((err) => console.error("[audit]", err));
+  }
+
   async findByPelada(peladaId: string, tipos?: string[]) {
     return this.prisma.auditEntry.findMany({
       where: {

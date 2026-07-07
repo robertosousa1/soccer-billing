@@ -4,7 +4,8 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": false,
-    "noUncheckedIndexedAccess": false
+    "noUncheckedIndexedAccess": false,
+    "jsx": "react-jsx"
   },
   "include": ["src"]
 }

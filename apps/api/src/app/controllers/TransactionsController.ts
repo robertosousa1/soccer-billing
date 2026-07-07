@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { prisma } from "../../database/client";
 import { TransactionsRepository } from "../repositories/TransactionsRepository";
 import { PayersRepository } from "../repositories/PayersRepository";
+import { AuditEntryRepository } from "../repositories/AuditEntryRepository";
 import { UpdateTransactionService } from "../services/UpdateTransactionService";
 import { ListTransactionsService } from "../services/ListTransactionsService";
 import { DeleteTransactionService } from "../services/DeleteTransactionService";
@@ -20,8 +21,16 @@ export class TransactionsController {
   }
 
   async store(req: PeladaScopedRequest, res: Response): Promise<void> {
-    const service = new CreateTransactionService(new TransactionsRepository(prisma), new PayersRepository(prisma));
-    const transaction = await service.execute({ peladaId: req.params.peladaId, ...req.body });
+    const service = new CreateTransactionService(
+      new TransactionsRepository(prisma),
+      new PayersRepository(prisma),
+      new AuditEntryRepository(prisma),
+    );
+    const transaction = await service.execute({
+      peladaId: req.params.peladaId,
+      ...req.body,
+      actorUserId: req.userId ?? null,
+    });
     res.status(201).json(TransactionMapper.toDTO(transaction));
   }
 
@@ -45,7 +54,11 @@ export class TransactionsController {
 
   async destroy(req: PeladaScopedRequest, res: Response): Promise<void> {
     if (!req.userId) throw new AppError("Não autenticado", 401);
-    const service = new DeleteTransactionService(new TransactionsRepository(prisma), new PayersRepository(prisma));
+    const service = new DeleteTransactionService(
+      new TransactionsRepository(prisma),
+      new PayersRepository(prisma),
+      new AuditEntryRepository(prisma),
+    );
     await service.execute(req.params.peladaId, req.params.id, req.userId);
     res.status(204).send();
   }

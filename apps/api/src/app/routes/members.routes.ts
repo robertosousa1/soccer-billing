@@ -14,7 +14,7 @@ membersRouter.get("/", authorize("READ"), (req, res, next) => membersController.
 membersRouter.post(
   "/",
   authorize("MANAGE_MEMBERS"),
-  validate({ body: z.object({ email: z.string().email(), role: roleSchema }) }),
+  validate({ body: z.object({ name: z.string().min(1), email: z.string().email(), role: roleSchema }) }),
   (req, res, next) => membersController.create(req, res).catch(next),
 );
 

@@ -12,16 +12,16 @@ export class PayersRepository {
 
   listByPelada(peladaId: string) {
     return this.prisma.payer.findMany({
-      where: { peladaId },
-      include: { aliases: true },
+      where: { peladaId, deletedAt: null },
+      include: { aliases: { where: { deletedAt: null } } },
       orderBy: { nome: "asc" },
     });
   }
 
   findById(peladaId: string, id: string) {
     return this.prisma.payer.findFirst({
-      where: { id, peladaId },
-      include: { aliases: true },
+      where: { id, peladaId, deletedAt: null },
+      include: { aliases: { where: { deletedAt: null } } },
     });
   }
 
@@ -74,12 +74,6 @@ export class PayersRepository {
     }, { timeout: 30000, maxWait: 10000 });
   }
 
-  /**
-   * Muda o tipo do pagante e registra a troca no histórico, vigente a partir de
-   * `vigenteDesde`. `upsert` em vez de `create`: se já existir uma troca registrada para essa
-   * mesma competência (usuário mudou de ideia antes do mês acontecer), sobrescreve em vez de
-   * criar uma linha contraditória.
-   */
   changeType(
     id: string,
     data: {
@@ -110,7 +104,11 @@ export class PayersRepository {
     }, { timeout: 30000, maxWait: 10000 });
   }
 
-  delete(id: string): Promise<Payer> {
-    return this.prisma.payer.delete({ where: { id } });
+  softDelete(id: string): Promise<Payer> {
+    return this.prisma.$transaction(async (tx) => {
+      // soft-delete all active aliases so their unique constraint slot is freed
+      await tx.payerAlias.updateMany({ where: { payerId: id, deletedAt: null }, data: { deletedAt: new Date() } });
+      return tx.payer.update({ where: { id }, data: { deletedAt: new Date() } });
+    });
   }
 }

@@ -12,9 +12,11 @@ import { importsRouter } from "./imports.routes";
 import { transactionsRouter } from "./transactions.routes";
 import { reportsRouter } from "./reports.routes";
 import { AuditController } from "../controllers/AuditController";
+import { InvitesController } from "../controllers/InvitesController";
 
 const peladasRouter = Router();
 const peladasController = new PeladasController();
+const invitesController = new InvitesController();
 
 const nomeSchema = z.object({ nome: z.string().min(1) });
 
@@ -49,6 +51,17 @@ peladasRouter.use("/:peladaId/reports", ensureMember, reportsRouter);
 const auditController = new AuditController();
 peladasRouter.get("/:peladaId/audit", ensureMember, authorize("READ"), (req, res, next) =>
   auditController.index(req as Parameters<typeof auditController.index>[0], res).catch(next),
+);
+
+peladasRouter.get("/:peladaId/invites", ensureMember, authorize("MANAGE_MEMBERS"), (req, res, next) =>
+  invitesController.listPending(req as Parameters<typeof invitesController.listPending>[0], res).catch(next),
+);
+peladasRouter.post(
+  "/:peladaId/invites/resend",
+  ensureMember,
+  authorize("MANAGE_MEMBERS"),
+  (req, res, next) =>
+    invitesController.resend(req as Parameters<typeof invitesController.resend>[0], res).catch(next),
 );
 
 export { peladasRouter };

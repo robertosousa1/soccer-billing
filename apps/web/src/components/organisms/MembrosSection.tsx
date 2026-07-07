@@ -51,6 +51,7 @@ function Initials({ name }: { name: string }) {
 export function MembrosSection({ token, peladaId, myUserId, myRole }: Props) {
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MemberRole>("ADMIN");
   const [adding, setAdding] = useState(false);
@@ -79,7 +80,8 @@ export function MembrosSection({ token, peladaId, myUserId, myRole }: Props) {
     setError(null);
     setAdding(true);
     try {
-      await addMember(token, peladaId, email.trim(), role);
+      await addMember(token, peladaId, name.trim(), email.trim(), role);
+      setName("");
       setEmail("");
       await reload();
       flash("Membro adicionado!");
@@ -101,9 +103,9 @@ export function MembrosSection({ token, peladaId, myUserId, myRole }: Props) {
     try {
       await updateMemberRole(token, peladaId, userId, newRole);
       await reload();
-      flash("Papel atualizado!");
+      flash("Perfil atualizado!");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Erro ao atualizar papel.");
+      setError(err instanceof ApiError ? err.message : "Erro ao atualizar perfil.");
     }
   }
 
@@ -160,7 +162,7 @@ export function MembrosSection({ token, peladaId, myUserId, myRole }: Props) {
                 <p className="truncate text-xs text-muted">{m.email}</p>
               </div>
 
-              {/* Papel — select para OWNER gerenciar, badge para outros */}
+              {/* Perfil — select para OWNER gerenciar, badge para outros */}
               {canManage && !isMe ? (
                 <Select
                   value={m.role}
@@ -193,7 +195,7 @@ export function MembrosSection({ token, peladaId, myUserId, myRole }: Props) {
         })}
       </div>
 
-      {/* Legenda de papéis */}
+      {/* Legenda de perfis */}
       <div className="mt-3 space-y-0.5">
         {(Object.keys(ROLE_CONFIG) as MemberRole[]).map((r) => (
           <p key={r} className="text-xs text-muted">
@@ -210,9 +212,15 @@ export function MembrosSection({ token, peladaId, myUserId, myRole }: Props) {
         <form onSubmit={handleAdd} className="mt-5 space-y-3 rounded-card border border-line bg-card p-4 shadow-card">
           <h3 className="text-sm font-semibold">Adicionar membro</h3>
           <p className="text-xs text-muted">
-            O usuário precisa ter uma conta criada antes de ser adicionado.
+            Se o e-mail ainda não tem conta, um convite será enviado automaticamente.
           </p>
 
+          <Input
+            placeholder="Nome completo"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
           <div className="flex gap-2">
             <Input
               type="email"

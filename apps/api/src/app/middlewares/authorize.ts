@@ -5,7 +5,7 @@ import type { PeladaScopedRequest } from "./ensureMember";
 
 export function authorize(capability: Capability) {
   return (req: PeladaScopedRequest, _res: Response, next: NextFunction): void => {
-    if (!req.peladaRole) throw new AppError("Papel do usuário na pelada não resolvido", 403);
+    if (!req.peladaRole) throw new AppError("Perfil do usuário na pelada não resolvido", 403);
     if (!roleCan(req.peladaRole, capability)) {
       throw new AppError("Você não tem permissão para esta ação", 403);
     }

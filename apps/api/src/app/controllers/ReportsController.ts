@@ -26,7 +26,7 @@ export class ReportsController {
     const { peladaId, competencia } = req.params;
     const buffer = await new BuildMonthlyReportPdfService().execute(peladaId, competencia);
 
-    await new AuditEntryRepository(prisma).create({
+    new AuditEntryRepository(prisma).fire({
       peladaId,
       userId: req.userId,
       tipo: "RELATORIO_EXPORTADO",

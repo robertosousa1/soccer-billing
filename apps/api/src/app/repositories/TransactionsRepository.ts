@@ -34,21 +34,21 @@ export class TransactionsRepository {
 
   listExistingKeys(peladaId: string): Promise<{ chaveNatural: string }[]> {
     return this.prisma.transaction.findMany({
-      where: { peladaId },
+      where: { peladaId, deletedAt: null },
       select: { chaveNatural: true },
     });
   }
 
   listByCompetencia(peladaId: string, competencia: string) {
     return this.prisma.transaction.findMany({
-      where: { peladaId, competencia },
+      where: { peladaId, competencia, deletedAt: null },
       include: { shares: true },
     });
   }
 
   listByPelada(peladaId: string) {
     return this.prisma.transaction.findMany({
-      where: { peladaId },
+      where: { peladaId, deletedAt: null },
       include: { shares: { include: { payer: true } } },
       orderBy: [{ competencia: "desc" }, { data: "desc" }, { hora: "desc" }],
     });
@@ -56,7 +56,7 @@ export class TransactionsRepository {
 
   findById(peladaId: string, id: string) {
     return this.prisma.transaction.findFirst({
-      where: { id, peladaId },
+      where: { id, peladaId, deletedAt: null },
       include: { shares: true },
     });
   }
@@ -83,27 +83,27 @@ export class TransactionsRepository {
   /** Menor competência entre as mensalidades não ignoradas de um pagante (base de `Payer.desde`). */
   async minMensalidadeCompetencia(payerId: string): Promise<string | null> {
     const share = await this.prisma.share.findFirst({
-      where: { payerId, categoria: "MENSALIDADE", transaction: { ignorada: false } },
+      where: { payerId, categoria: "MENSALIDADE", transaction: { ignorada: false, deletedAt: null } },
       orderBy: { transaction: { competencia: "asc" } },
       select: { transaction: { select: { competencia: true } } },
     });
     return share?.transaction.competencia ?? null;
   }
 
-  delete(id: string): Promise<Transaction> {
-    return this.prisma.transaction.delete({ where: { id } });
+  softDelete(id: string): Promise<Transaction> {
+    return this.prisma.transaction.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
-  /** Primeira e última competência com lançamentos na pelada (limites de navegação do Painel). */
+  /** Primeira e última competência com lançamentos ativos na pelada. */
   async competenciaRange(peladaId: string): Promise<{ min: string | null; max: string | null }> {
     const [min, max] = await Promise.all([
       this.prisma.transaction.findFirst({
-        where: { peladaId },
+        where: { peladaId, deletedAt: null },
         orderBy: { competencia: "asc" },
         select: { competencia: true },
       }),
       this.prisma.transaction.findFirst({
-        where: { peladaId },
+        where: { peladaId, deletedAt: null },
         orderBy: { competencia: "desc" },
         select: { competencia: true },
       }),
