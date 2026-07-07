@@ -58,7 +58,7 @@ export class PayersRepository {
       });
       await new PayerHistoryRepository(tx).recordCreation(created.id, actor.userId, created, actor.motivo);
       return created;
-    });
+    }, { timeout: 30000, maxWait: 10000 });
   }
 
   update(
@@ -71,7 +71,7 @@ export class PayersRepository {
       const after = await tx.payer.update({ where: { id }, data });
       await new PayerHistoryRepository(tx).recordEdit(id, actor.userId, before, after, actor.motivo);
       return after;
-    });
+    }, { timeout: 30000, maxWait: 10000 });
   }
 
   /**
@@ -107,7 +107,7 @@ export class PayersRepository {
         { campo: "Vigência da troca de tipo", de: null, para: data.vigenteDesde },
       ]);
       return payer;
-    });
+    }, { timeout: 30000, maxWait: 10000 });
   }
 
   delete(id: string): Promise<Payer> {

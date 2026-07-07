@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { toTitle } from "@pelada/core";
 import { Badge } from "@/components/atoms/Badge";
 import { Button } from "@/components/atoms/Button";
+import { Skeleton } from "@/components/atoms/Skeleton";
 import { ptBR } from "@/i18n/pt-BR";
 import { getPayerHistory, type PayerDTO, type PayerHistoryEntryDTO } from "@/services/payers";
 import { mesLabel } from "@/lib/competencia";
@@ -52,7 +53,17 @@ export function PayerHistoryModal({ token, peladaId, payer, onClose }: PayerHist
         </div>
 
         <div className="overflow-y-auto p-5">
-          {loading && <p className="text-sm text-muted">Carregando...</p>}
+          {loading && (
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="space-y-2 rounded-soft border border-line p-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              ))}
+            </div>
+          )}
           {error && <p className="text-sm text-clay">{error}</p>}
 
           {!loading && !error && entries.length === 0 && (

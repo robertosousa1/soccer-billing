@@ -20,14 +20,16 @@ interface ImportModalProps {
 }
 
 export function ImportModal({ onClose, onImported }: ImportModalProps) {
-  useEscapeKey(onClose);
   const { token } = useAuth();
   const { current } = usePelada();
   const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
   const [linhas, setLinhas] = useState<ImportLineDraft[]>([]);
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [valoresRef, setValoresRef] = useState<{ avulso: number; mensalidade: number } | null>(null);
+
+  useEscapeKey(confirming ? () => {} : onClose);
 
   useEffect(() => {
     if (!token || !current) return;
@@ -65,7 +67,7 @@ export function ImportModal({ onClose, onImported }: ImportModalProps) {
       setError(ptBR.importar.faltaNomeDivisao);
       return;
     }
-    setLoading(true);
+    setConfirming(true);
     setError(null);
     try {
       await confirmImport(token, current.id, {
@@ -79,60 +81,80 @@ export function ImportModal({ onClose, onImported }: ImportModalProps) {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Erro inesperado ao confirmar a importação.");
     } finally {
-      setLoading(false);
+      setConfirming(false);
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-card bg-card p-5 shadow-card">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-card bg-card shadow-card">
+
+        {/* Cabeçalho fixo */}
+        <div className="flex flex-none items-center justify-between border-b border-line px-6 py-4">
           <h2 className="font-display text-lg">{ptBR.importar.titulo}</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            {ptBR.importar.fechar}
-          </Button>
+          {!confirming && (
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              {ptBR.importar.fechar}
+            </Button>
+          )}
         </div>
 
-        {error && <AlertBanner tone="error">{error}</AlertBanner>}
+        {/* Conteúdo rolável */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {error && <div className="mb-4"><AlertBanner tone="error">{error}</AlertBanner></div>}
 
-        <div className="my-5">
-          <DropZone onFile={handleFile} disabled={loading} />
-          {loading && !preview && <p className="mt-3 text-sm text-muted">{ptBR.importar.processando}</p>}
-        </div>
+          <div className="mb-5">
+            <DropZone onFile={handleFile} disabled={loading || confirming} />
+            {loading && !preview && (
+              <div className="mt-6 flex flex-col items-center justify-center gap-2.5 text-sm text-muted">
+                <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-line border-t-pitch" />
+                {ptBR.importar.processando}
+              </div>
+            )}
+          </div>
 
-        {preview && (
-          <div className="space-y-4">
-            {preview.arquivoIdentico && <AlertBanner tone="warn">{ptBR.importar.arquivoIgual}</AlertBanner>}
-            <div className="flex gap-4 text-sm text-muted">
-              <span>{interpolate(ptBR.importar.novas, { n: preview.qtdNovas })}</span>
-              <span>{interpolate(ptBR.importar.duplicadas, { n: preview.qtdDuplicadas })}</span>
+          {preview && (
+            <div className="space-y-4">
+              {preview.arquivoIdentico && <AlertBanner tone="warn">{ptBR.importar.arquivoIgual}</AlertBanner>}
+              <div className="flex gap-4 text-sm text-muted">
+                <span>{interpolate(ptBR.importar.novas, { n: preview.qtdNovas })}</span>
+                <span>{interpolate(ptBR.importar.duplicadas, { n: preview.qtdDuplicadas })}</span>
+              </div>
+
+              <ReconciliationTable
+                linhas={linhas}
+                onChange={setLinhas}
+                valorAvulso={valoresRef?.avulso ?? 0}
+                valorMensalidade={valoresRef?.mensalidade ?? 0}
+              />
             </div>
+          )}
 
-            <ReconciliationTable
-              linhas={linhas}
-              onChange={setLinhas}
-              valorAvulso={valoresRef?.avulso ?? 0}
-              valorMensalidade={valoresRef?.mensalidade ?? 0}
-            />
+          {!preview && !loading && <p className="text-sm text-muted">{ptBR.importar.semLinhas}</p>}
+        </div>
 
-            <div className="flex justify-end gap-2">
+        {/* Rodapé fixo — só aparece quando há preview */}
+        {preview && (
+          <div className="flex flex-none items-center justify-end gap-2 border-t border-line px-6 py-4">
+            {confirming && (
+              <span className="flex items-center gap-2 text-sm text-muted">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-line border-t-pitch" />
+                Importando, aguarde...
+              </span>
+            )}
+            {!confirming && (
               <Button
                 variant="ghost"
-                onClick={() => {
-                  setPreview(null);
-                  setLinhas([]);
-                }}
+                onClick={() => { setPreview(null); setLinhas([]); }}
               >
                 {ptBR.importar.cancelar}
               </Button>
-              <Button variant="primary" loading={loading} onClick={handleConfirm}>
-                {ptBR.importar.confirmar}
-              </Button>
-            </div>
+            )}
+            <Button variant="primary" loading={confirming} disabled={confirming} onClick={handleConfirm}>
+              {ptBR.importar.confirmar}
+            </Button>
           </div>
         )}
-
-        {!preview && !loading && <p className="text-sm text-muted">{ptBR.importar.semLinhas}</p>}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { payersRouter } from "./payers.routes";
 import { importsRouter } from "./imports.routes";
 import { transactionsRouter } from "./transactions.routes";
 import { reportsRouter } from "./reports.routes";
+import { AuditController } from "../controllers/AuditController";
 
 const peladasRouter = Router();
 const peladasController = new PeladasController();
@@ -44,5 +45,10 @@ peladasRouter.use("/:peladaId/payers", ensureMember, payersRouter);
 peladasRouter.use("/:peladaId/imports", ensureMember, importsRouter);
 peladasRouter.use("/:peladaId/transactions", ensureMember, transactionsRouter);
 peladasRouter.use("/:peladaId/reports", ensureMember, reportsRouter);
+
+const auditController = new AuditController();
+peladasRouter.get("/:peladaId/audit", ensureMember, authorize("READ"), (req, res, next) =>
+  auditController.index(req as Parameters<typeof auditController.index>[0], res).catch(next),
+);
 
 export { peladasRouter };

@@ -21,7 +21,9 @@ export const ptBR = {
   nav: {
     painel: "Painel",
     importar: "Pagamentos",
-    pagantes: "Pagantes",
+    pagantes: "Jogadores",
+    auditoria: "Auditoria",
+    membros: "Membros",
     config: "Configurações",
   },
   painel: {
@@ -77,7 +79,7 @@ export const ptBR = {
     semLinhas: "Envie um arquivo para começar.",
     semPagamentos: "Nenhum pagamento lançado ainda.",
     processando: "Processando arquivo...",
-    saida: "Outro",
+    saida: "Saída",
     entrada: "Entrada",
     telefone: "Telefone",
     duplicadasAviso: "Pagamentos já importados anteriormente — para editar, acesse Pagamentos",
@@ -106,14 +108,14 @@ export const ptBR = {
     pagante: "Pagante",
     categoria: "Categoria",
     valor: "Valor",
-    semPagantesCadastrados: "Cadastre um pagante em Pagantes antes de registrar uma entrada.",
+    semPagantesCadastrados: "Cadastre um jogador em Jogadores antes de registrar uma entrada.",
     pagamentoRegistrado: "Pagamento registrado!",
     origem: "Origem",
     origemImportacao: "Importação",
     origemManual: "Manual",
   },
   pagantes: {
-    titulo: "Base de pagantes",
+    titulo: "Base de Jogadores",
     semWhatsapp: "{n} mensalista(s) ativo(s) sem WhatsApp.",
     novo: "Novo pagante",
     editarTitulo: "Editar pagante",
@@ -142,7 +144,7 @@ export const ptBR = {
     mesclarAviso:
       "Essa ação não pode ser desfeita. Lançamentos divididos não são afetados — só as cotas dos pagantes selecionados mudam de dono.",
     mesclarConfirmar: "Mesclar",
-    mesclado: "Pagantes mesclados!",
+    mesclado: "Jogadores mesclados!",
     historico: "Ver histórico",
     historicoTitulo: "Histórico de edições",
     historicoVazio: "Nenhum registro de alteração para este pagante.",
@@ -159,13 +161,17 @@ export const ptBR = {
     titulo: "Configurações",
     avisoSnapshot:
       "Mudar estes valores não altera meses já lançados — vale só para as próximas importações e para os rótulos de referência.",
+    avisoPrimeiraConfig:
+      "Antes de continuar, configure os valores da sua pelada. Preencha tudo manualmente — nada vem pré-definido.",
     valorMensalidade: "Valor da mensalidade",
     valorAvulso: "Valor do avulso",
     valorAluguel: "Valor do aluguel da quadra",
     diaPagamentoQuadra: "Dia de pagamento da quadra",
     identificadoresQuadra: "Identificadores da quadra no extrato",
     salvar: "Salvar configurações",
+    salvarPrimeiraConfig: "Salvar e continuar",
     salvo: "Configurações salvas!",
+    erroSalvar: "Não foi possível salvar. Confira os valores e tente novamente.",
   },
   peladas: {
     selecionar: "Selecionar pelada",

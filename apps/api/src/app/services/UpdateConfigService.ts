@@ -19,7 +19,34 @@ export class UpdateConfigService {
 
   async execute(req: Request) {
     const existing = await this.configRepository.findByPelada(req.peladaId);
-    if (!existing) throw new AppError("Config não encontrada para esta pelada", 404);
+
+    if (!existing) {
+      if (
+        req.valorMensalidade === undefined ||
+        req.valorAvulso === undefined ||
+        req.valorAluguel === undefined ||
+        req.diaPagamentoQuadra === undefined
+      ) {
+        throw new AppError(
+          "Informe mensalidade, avulso, aluguel e dia de pagamento para configurar a pelada",
+          400,
+        );
+      }
+
+      const created = await this.configRepository.create({
+        peladaId: req.peladaId,
+        valorMensalidade: parseMoneyToCents(req.valorMensalidade),
+        valorAvulso: parseMoneyToCents(req.valorAvulso),
+        valorAluguel: parseMoneyToCents(req.valorAluguel),
+        diaPagamentoQuadra: req.diaPagamentoQuadra,
+      });
+
+      if (req.identificadoresQuadra !== undefined) {
+        await this.configRepository.replaceCourtIdentifiers(created.id, req.identificadoresQuadra);
+      }
+
+      return this.configRepository.findByPelada(req.peladaId);
+    }
 
     await this.configRepository.update(req.peladaId, {
       ...(req.valorMensalidade !== undefined && { valorMensalidade: parseMoneyToCents(req.valorMensalidade) }),

@@ -17,7 +17,11 @@ export default function RootPage() {
       return;
     }
     if (peladaLoading) return;
-    router.replace(current ? "/painel" : "/peladas");
+    if (!current) {
+      router.replace("/peladas");
+      return;
+    }
+    router.replace(current.configurado ? "/painel" : "/configuracoes");
   }, [authLoading, token, peladaLoading, current, router]);
 
   return null;

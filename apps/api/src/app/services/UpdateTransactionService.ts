@@ -1,7 +1,9 @@
-import { naturalKey } from "@pelada/core";
+import type { PrismaClient } from "@prisma/client";
+import { naturalKey, formatBRL, formatDateBR } from "@pelada/core";
 import { AppError } from "../utils/AppError";
 import type { TransactionsRepository } from "../repositories/TransactionsRepository";
 import type { PayersRepository } from "../repositories/PayersRepository";
+import { TransactionHistoryRepository, type TransactionFieldChange } from "../repositories/TransactionHistoryRepository";
 
 interface Request {
   peladaId: string;
@@ -18,6 +20,7 @@ export class UpdateTransactionService {
   constructor(
     private readonly transactionsRepository: TransactionsRepository,
     private readonly payersRepository: PayersRepository,
+    private readonly prisma: PrismaClient,
   ) {}
 
   async execute(req: Request) {
@@ -40,6 +43,16 @@ export class UpdateTransactionService {
       ? naturalKey({ data: novaData, hora: existing.hora, nomeOriginal: existing.nomeOriginal, valor: novoValorAssinado })
       : undefined;
 
+    const alteracoes: TransactionFieldChange[] = [];
+    const push = (campo: string, de: string | null, para: string | null) => {
+      if (de !== para) alteracoes.push({ campo, de, para });
+    };
+    if (req.data !== undefined) push("Data", formatDateBR(existing.data), formatDateBR(req.data));
+    if (req.valor !== undefined) push("Valor", formatBRL(Math.abs(existing.valor)), formatBRL(req.valor));
+    if (req.competencia !== undefined) push("Competência", existing.competencia, req.competencia);
+    if (req.outflowCategory !== undefined) push("Categoria", existing.outflowCategory ?? null, req.outflowCategory);
+    if (req.ignorada !== undefined) push("Ignorada", existing.ignorada ? "Sim" : "Não", req.ignorada ? "Sim" : "Não");
+
     try {
       const updated = await this.transactionsRepository.update(req.id, {
         data: req.data,
@@ -48,7 +61,10 @@ export class UpdateTransactionService {
         competencia: req.competencia,
         outflowCategory: req.outflowCategory,
         ignorada: req.ignorada,
+        editada: true,
       });
+
+      await new TransactionHistoryRepository(this.prisma).record(req.id, req.userId, alteracoes);
 
       if (req.valor !== undefined && existing.shares[0]) {
         await this.transactionsRepository.updateShareValor(existing.shares[0].id, req.valor);

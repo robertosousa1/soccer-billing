@@ -34,8 +34,11 @@ export function autoCategorize(
   payersById: Map<string, Payer>,
 ): AutoCategoryResult {
   if (t.valor < 0) {
+    const isQuadra =
+      isCourt(t.nomeOriginal, cfg) ||
+      (cfg.valorAluguel > 0 && Math.abs(Math.abs(t.valor) - cfg.valorAluguel) < 1);
     return {
-      outflowCategory: isCourt(t.nomeOriginal, cfg) ? "QUADRA" : "OUTRA_SAIDA",
+      outflowCategory: isQuadra ? "QUADRA" : "OUTRA_SAIDA",
       payerId: null,
       novoPagante: false,
     };

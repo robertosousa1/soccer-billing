@@ -49,10 +49,7 @@ export function ManualTransactionModal({ onClose, onCreated }: ManualTransaction
 
   useEffect(() => {
     if (!token || !current) return;
-    listPayers(token, current.id).then((list) => {
-      setPayers(list);
-      setPayerId((prev) => prev || list[0]?.id || "");
-    });
+    listPayers(token, current.id).then(setPayers);
     getConfig(token, current.id).then((c) => setDiaPagamentoQuadra(c.diaPagamentoQuadra));
   }, [token, current]);
 
@@ -144,6 +141,7 @@ export function ManualTransactionModal({ onClose, onCreated }: ManualTransaction
                   <p className="text-sm text-muted">{ptBR.importar.semPagantesCadastrados}</p>
                 ) : (
                   <Select value={payerId} onChange={(e) => setPayerId(e.target.value)} required>
+                    <option value="" disabled>Selecione um jogador...</option>
                     {payers.map((p) => (
                       <option key={p.id} value={p.id}>
                         {toTitle(p.nome)}

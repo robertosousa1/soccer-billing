@@ -6,6 +6,7 @@ export interface PeladaSummary {
   id: string;
   nome: string;
   role: MemberRole;
+  configurado: boolean;
 }
 
 export function listPeladas(token: string) {

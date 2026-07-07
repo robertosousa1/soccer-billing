@@ -16,6 +16,7 @@ import { usePelada } from "@/contexts/PeladaContext";
 import { createPayer, deletePayer, listPayers, updatePayer, type PayerDTO } from "@/services/payers";
 import { ptBR, interpolate } from "@/i18n/pt-BR";
 import { mesLabel } from "@/lib/competencia";
+import { Skeleton } from "@/components/atoms/Skeleton";
 
 function TruncatedName({ name }: { name: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -157,9 +158,13 @@ export default function PagantesPage() {
         <p className="mb-3 text-sm text-clay">{interpolate(ptBR.pagantes.semWhatsapp, { n: semWhatsapp })}</p>
       )}
 
-      {loading && <p className="text-sm text-muted">Carregando...</p>}
+      {loading && (
+        <div className="space-y-2">
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-14" />)}
+        </div>
+      )}
 
-      <div className="overflow-x-auto rounded-card border border-line bg-card shadow-card">
+      {!loading && (<><div className="overflow-x-auto rounded-card border border-line bg-card shadow-card">
         <table className="w-full table-fixed text-sm">
           <colgroup>
             <col />
@@ -284,6 +289,7 @@ export default function PagantesPage() {
           </div>
         </div>
       )}
+      </>)}
 
       {editing && (
         <PayerEditor

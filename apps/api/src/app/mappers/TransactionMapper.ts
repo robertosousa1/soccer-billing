@@ -15,6 +15,7 @@ export class TransactionMapper {
       outflowCategory: transaction.outflowCategory,
       competencia: transaction.competencia,
       ignorada: transaction.ignorada,
+      editada: transaction.editada,
       origem: transaction.importId ? ("IMPORTACAO" as const) : ("MANUAL" as const),
       cotas: transaction.shares.map((s) => ({
         categoria: s.categoria,

@@ -118,7 +118,7 @@ export class ConfirmReconciliationService {
       });
 
       return novaImport;
-    });
+    }, { timeout: 30000, maxWait: 10000 });
   }
 
   private async resolvePayerId(params: {

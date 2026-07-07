@@ -107,6 +107,6 @@ export class MergePayersService {
       );
 
       return updated;
-    });
+    }, { timeout: 30000, maxWait: 10000 });
   }
 }

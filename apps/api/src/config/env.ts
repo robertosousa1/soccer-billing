@@ -17,7 +17,8 @@ export const env = {
   storageDriver: (process.env.STORAGE_DRIVER ?? "local") as "local" | "s3",
   storageLocalDir: process.env.STORAGE_LOCAL_DIR ?? "./storage",
   s3Bucket: process.env.S3_BUCKET ?? "",
-  s3Region: process.env.S3_REGION ?? "",
+  s3Region: process.env.S3_REGION ?? "us-east-1",
+  s3Endpoint: process.env.S3_ENDPOINT ?? "",
   sentryDsn: process.env.SENTRY_DSN ?? "",
   newRelicLicenseKey: process.env.NEW_RELIC_LICENSE_KEY ?? "",
 };

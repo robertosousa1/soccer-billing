@@ -26,7 +26,8 @@ export default function PeladasPage() {
 
   function handleSelect(id: string) {
     selectPelada(id);
-    router.push("/painel");
+    const pelada = peladas.find((p) => p.id === id);
+    router.push(pelada?.configurado ? "/painel" : "/configuracoes");
   }
 
   async function handleCreate() {
@@ -36,7 +37,7 @@ export default function PeladasPage() {
     try {
       const created = await createPelada(token, nome.trim());
       await selectAndReload(created.id);
-      router.push("/painel");
+      router.push("/configuracoes");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : ptBR.peladas.erroCriar);
     } finally {

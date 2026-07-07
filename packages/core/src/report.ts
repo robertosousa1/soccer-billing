@@ -140,7 +140,7 @@ export function computeReport(
     totalSaidas,
     saldo: totalEntradas - totalSaidas,
     totalQuadra,
-    quadraPaga: quadra.length > 0,
+    quadraPaga: quadra.length > 0 && (config ? totalQuadra >= config.valorAluguel : true),
     mensalistasPagaram,
     avulsoCount,
     avulsos,

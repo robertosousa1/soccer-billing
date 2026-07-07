@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, GitMerge, ChevronUp, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
+import { Pencil, Trash2, GitMerge, History, ChevronUp, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { addMonths, toTitle, ymOf } from "@pelada/core";
 import { PageShell } from "@/components/templates/PageShell";
 import { Badge } from "@/components/atoms/Badge";
@@ -14,13 +14,15 @@ import { ManualTransactionModal } from "@/components/organisms/ManualTransaction
 import { TransactionEditor } from "@/components/organisms/TransactionEditor";
 import { MergePayersModal } from "@/components/organisms/MergePayersModal";
 import { AbonoModal } from "@/components/organisms/AbonoModal";
+import { HistoryModal, type HistoryEntry } from "@/components/organisms/HistoryModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePelada } from "@/contexts/PeladaContext";
-import { listTransactions, updateTransaction, deleteTransaction, type TransactionDTO } from "@/services/transactions";
+import { listTransactions, updateTransaction, deleteTransaction, getTransactionHistory, type TransactionDTO, type TransactionHistoryEntryDTO } from "@/services/transactions";
 import { getMonthlyReport, getCompetenciaRange, type MonthlyReportDTO } from "@/services/reports";
 import { deleteAbono } from "@/services/payers";
 import { ptBR, interpolate } from "@/i18n/pt-BR";
 import { mesLabel } from "@/lib/competencia";
+import { Skeleton } from "@/components/atoms/Skeleton";
 
 /** "YYYY-MM-DD" -> "DD/MM/YYYY", sem passar por Date (evita bug de fuso horário). */
 function formatDataBR(data: string): string {
@@ -45,6 +47,8 @@ export default function PagamentosPage() {
   const [deleting, setDeleting] = useState<TransactionDTO | null>(null);
   const [mergingPayerId, setMergingPayerId] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [txHistory, setTxHistory] = useState<{ tx: TransactionDTO; entries: TransactionHistoryEntryDTO[]; loading: boolean } | null>(null);
 
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<"" | "entrada" | "saida">("");
@@ -85,6 +89,13 @@ export default function PagamentosPage() {
   useEffect(() => {
     setPagina(1);
   }, [filtroNome, filtroTipo, filtroOrigem, competencia]);
+
+  async function openTxHistory(tx: TransactionDTO) {
+    if (!token || !current) return;
+    setTxHistory({ tx, entries: [], loading: true });
+    const entries = await getTransactionHistory(token, current.id, tx.id);
+    setTxHistory({ tx, entries, loading: false });
+  }
 
   async function handleSave(data: {
     data?: string;
@@ -184,7 +195,14 @@ export default function PagamentosPage() {
 
       {success && <div className="mb-4"><AlertBanner tone="ok">{success}</AlertBanner></div>}
 
-      {loading && <p className="text-sm text-muted">Carregando...</p>}
+      {loading && (
+        <div className="space-y-5">
+          <Skeleton className="h-10 w-48" />
+          <div className="space-y-2">
+            {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12" />)}
+          </div>
+        </div>
+      )}
 
       {!loading && report && (
         <div className="space-y-6">
@@ -315,7 +333,16 @@ export default function PagamentosPage() {
                           key={p.id}
                           className={`border-b border-line last:border-0 hover:bg-chalk ${p.ignorada ? "opacity-50" : ""}`}
                         >
-                          <td className="px-4 py-3 whitespace-nowrap">{formatDataBR(p.data)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              {formatDataBR(p.data)}
+                              {p.editada && (
+                                <span title="Este lançamento foi editado" className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                                  editado
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-4 py-3">{toTitle(p.nomeOriginal)}</td>
                           <td className={`px-4 py-3 tabular font-semibold ${p.isOutflow ? "text-clay" : "text-pitch"}`}>
                             {p.valor}
@@ -354,6 +381,18 @@ export default function PagamentosPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1">
+                              {p.editada && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="!px-2"
+                                  title="Ver histórico de alterações"
+                                  aria-label="Ver histórico de alterações"
+                                  onClick={() => openTxHistory(p)}
+                                >
+                                  <History className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -445,6 +484,16 @@ export default function PagamentosPage() {
             await reload();
           }}
           onClose={() => setShowAbonoModal(false)}
+        />
+      )}
+
+      {txHistory && (
+        <HistoryModal
+          title="Pagamento"
+          subtitle={toTitle(txHistory.tx.nomeOriginal)}
+          entries={txHistory.entries}
+          loading={txHistory.loading}
+          onClose={() => setTxHistory(null)}
         />
       )}
 

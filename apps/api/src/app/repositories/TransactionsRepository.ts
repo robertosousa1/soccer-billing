@@ -70,6 +70,7 @@ export class TransactionsRepository {
       competencia?: string;
       outflowCategory?: Transaction["outflowCategory"];
       ignorada?: boolean;
+      editada?: boolean;
     },
   ): Promise<Transaction> {
     return this.prisma.transaction.update({ where: { id }, data });

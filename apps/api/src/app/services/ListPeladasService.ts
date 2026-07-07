@@ -9,6 +9,7 @@ export class ListPeladasService {
       id: m.pelada.id,
       nome: m.pelada.nome,
       role: m.role,
+      configurado: !!m.pelada.config,
     }));
   }
 }

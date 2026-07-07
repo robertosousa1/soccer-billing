@@ -53,6 +53,10 @@ transactionsRouter.put(
   (req, res, next) => transactionsController.update(req, res).catch(next),
 );
 
+transactionsRouter.get("/:id/history", authorize("READ"), (req, res, next) =>
+  transactionsController.history(req, res).catch(next),
+);
+
 transactionsRouter.delete("/:id", authorize("WRITE"), (req, res, next) =>
   transactionsController.destroy(req, res).catch(next),
 );

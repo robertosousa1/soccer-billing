@@ -5,4 +5,5 @@ export const storageConfig = {
   localDir: env.storageLocalDir,
   s3Bucket: env.s3Bucket,
   s3Region: env.s3Region,
+  s3Endpoint: env.s3Endpoint,
 };

@@ -10,3 +10,19 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+@keyframes shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    theme("colors.chalk") 25%,
+    theme("colors.line")  50%,
+    theme("colors.chalk") 75%
+  );
+  background-size: 300% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

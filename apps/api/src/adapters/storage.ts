@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { storageConfig } from "../config/storage";
 
 export interface StorageAdapter {
@@ -17,10 +18,26 @@ class LocalStorageAdapter implements StorageAdapter {
 }
 
 class S3StorageAdapter implements StorageAdapter {
-  async save(_originalName: string, _buffer: Buffer): Promise<string> {
-    // Implementação real do upload ao S3 entra aqui (Fase 2 avançada/produção).
-    // Mantido como stub explícito para não mascarar a ausência de credenciais em dev.
-    throw new Error("Driver S3 não configurado neste ambiente — use STORAGE_DRIVER=local em dev.");
+  private readonly client: S3Client;
+
+  constructor() {
+    this.client = new S3Client({
+      region: storageConfig.s3Region,
+      ...(storageConfig.s3Endpoint ? { endpoint: storageConfig.s3Endpoint, forcePathStyle: true } : {}),
+    });
+  }
+
+  async save(originalName: string, buffer: Buffer): Promise<string> {
+    const key = `extratos/${randomUUID()}-${originalName}`;
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: storageConfig.s3Bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: "text/csv",
+      }),
+    );
+    return key;
   }
 }
 

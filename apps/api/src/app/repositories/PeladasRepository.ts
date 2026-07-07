@@ -10,7 +10,7 @@ export class PeladasRepository {
   listForUser(userId: string) {
     return this.prisma.peladaMember.findMany({
       where: { userId },
-      include: { pelada: true },
+      include: { pelada: { include: { config: true } } },
     });
   }
 

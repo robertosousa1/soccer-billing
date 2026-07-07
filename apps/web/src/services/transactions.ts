@@ -10,6 +10,7 @@ export interface TransactionDTO {
   outflowCategory: "QUADRA" | "OUTRA_SAIDA" | null;
   competencia: string;
   ignorada: boolean;
+  editada: boolean;
   origem: "IMPORTACAO" | "MANUAL";
   cotas: {
     categoria: "MENSALIDADE" | "AVULSO" | "CONTRIBUICAO" | "OUTRO";
@@ -61,4 +62,22 @@ export type CreateTransactionInput =
 
 export function createTransaction(token: string, peladaId: string, data: CreateTransactionInput) {
   return apiFetch<TransactionDTO>(`/peladas/${peladaId}/transactions`, { method: "POST", token, body: data });
+}
+
+export interface TransactionFieldChange {
+  campo: string;
+  de: string | null;
+  para: string | null;
+}
+
+export interface TransactionHistoryEntryDTO {
+  id: string;
+  alteracoes: TransactionFieldChange[];
+  usuario: string;
+  data: string;
+  hora: string;
+}
+
+export function getTransactionHistory(token: string, peladaId: string, transactionId: string) {
+  return apiFetch<TransactionHistoryEntryDTO[]>(`/peladas/${peladaId}/transactions/${transactionId}/history`, { token });
 }

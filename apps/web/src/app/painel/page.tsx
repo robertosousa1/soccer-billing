@@ -15,6 +15,7 @@ import { usePelada } from "@/contexts/PeladaContext";
 import { getMonthlyReport, getCompetenciaRange, exportMonthlyReportPdf, type MonthlyReportDTO } from "@/services/reports";
 import { ptBR, interpolate } from "@/i18n/pt-BR";
 import { mesLabel } from "@/lib/competencia";
+import { Skeleton } from "@/components/atoms/Skeleton";
 
 export default function PainelPage() {
   const { token } = useAuth();
@@ -52,7 +53,9 @@ export default function PainelPage() {
     getCompetenciaRange(token, current.id).then(setRange);
   }, [token, current]);
 
-  const podeAvancar = range.max !== null && addMonths(competencia, 1) <= range.max;
+  const hoje = ymOf(new Date().toISOString());
+  const maxNavegacao = range.max && range.max > hoje ? range.max : hoje;
+  const podeAvancar = addMonths(competencia, 1) <= maxNavegacao;
   const podeVoltar = range.min !== null && addMonths(competencia, -1) >= range.min;
 
   return (
@@ -61,14 +64,15 @@ export default function PainelPage() {
         <div className="flex items-center gap-3">
           <label className="text-sm font-semibold text-muted">{ptBR.painel.mes}</label>
           <div className="flex items-center gap-1">
-            <Input
-              type="month"
-              value={competencia}
-              onChange={(e) => setCompetencia(e.target.value)}
-              min={range.min ?? undefined}
-              max={range.max ?? undefined}
-              className="w-40"
-            />
+            <div className="w-40">
+              <Input
+                type="month"
+                value={competencia}
+                onChange={(e) => setCompetencia(e.target.value)}
+                min={range.min ?? undefined}
+                max={maxNavegacao}
+              />
+            </div>
             <div className="flex flex-col gap-0.5">
               <Button
                 variant="ghost"
@@ -103,7 +107,21 @@ export default function PainelPage() {
 
       {exportError && <AlertBanner tone="warn">{ptBR.painel.erroExportar}</AlertBanner>}
 
-      {loading && <p className="text-sm text-muted">Carregando...</p>}
+      {loading && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-3 gap-3">
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-[72px]" />)}
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[60px]" />)}
+          </div>
+          <Skeleton className="h-12" />
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-52" />
+            {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12" />)}
+          </div>
+        </div>
+      )}
 
       {report && !loading && (
         <div className="space-y-6">

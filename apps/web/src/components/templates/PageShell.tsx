@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { NavTabs } from "@/components/molecules/NavTabs";
 import { PeladaSwitcher } from "@/components/organisms/PeladaSwitcher";
 import { Button } from "@/components/atoms/Button";
@@ -13,6 +13,7 @@ export function PageShell({ children }: { children: React.ReactNode }) {
   const { logout, token, isLoading } = useAuth();
   const { current, isLoading: peladaLoading } = usePelada();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading && !token) router.replace("/login");
@@ -22,7 +23,14 @@ export function PageShell({ children }: { children: React.ReactNode }) {
     if (!isLoading && token && !peladaLoading && !current) router.replace("/peladas");
   }, [isLoading, token, peladaLoading, current, router]);
 
+  useEffect(() => {
+    if (!isLoading && token && !peladaLoading && current && !current.configurado && pathname !== "/configuracoes") {
+      router.replace("/configuracoes");
+    }
+  }, [isLoading, token, peladaLoading, current, pathname, router]);
+
   if (isLoading || !token || peladaLoading || !current) return null;
+  if (!current.configurado && pathname !== "/configuracoes") return null;
 
   return (
     <div className="min-h-screen bg-paper">
@@ -41,4 +49,3 @@ export function PageShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-

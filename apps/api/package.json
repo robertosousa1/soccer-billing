@@ -8,9 +8,11 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "test": "jest --coverage",
-    "test:integration": "npx jest --config jest.integration.config.js --runInBand"
+    "test:integration": "npx jest --config jest.integration.config.js --runInBand",
+    "db:reset-transaction-data": "prisma db execute --file prisma/reset-transaction-data.sql"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1080.0",
     "@pelada/core": "workspace:*",
     "@prisma/client": "^5.18.0",
     "@sentry/node": "^8.26.0",
