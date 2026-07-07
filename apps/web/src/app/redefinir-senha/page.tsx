@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/atoms/Button";
@@ -9,7 +9,7 @@ import { AlertBanner } from "@/components/molecules/AlertBanner";
 import { ApiError } from "@/services/api";
 import { resetPassword } from "@/services/auth";
 
-export default function RedefinirSenhaPage() {
+function RedefinirSenhaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
@@ -100,5 +100,13 @@ export default function RedefinirSenhaPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function RedefinirSenhaPage() {
+  return (
+    <Suspense>
+      <RedefinirSenhaContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
@@ -15,7 +15,7 @@ const REASON_MSG: Record<string, string> = {
   expired: "Este convite expirou. Peça ao organizador um novo convite.",
 };
 
-export default function ConvitePage() {
+function ConviteContent() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token") ?? "";
@@ -124,5 +124,13 @@ export default function ConvitePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ConvitePage() {
+  return (
+    <Suspense>
+      <ConviteContent />
+    </Suspense>
   );
 }
