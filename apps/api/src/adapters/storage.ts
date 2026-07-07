@@ -28,7 +28,14 @@ class S3StorageAdapter implements StorageAdapter {
   }
 
   async save(originalName: string, buffer: Buffer): Promise<string> {
-    const key = `extratos/${randomUUID()}-${originalName}`;
+    const now = new Date();
+    const prefix = [
+      "extracts",
+      now.getUTCFullYear(),
+      String(now.getUTCMonth() + 1).padStart(2, "0"),
+      String(now.getUTCDate()).padStart(2, "0"),
+    ].join("/");
+    const key = `${prefix}/${randomUUID()}-${originalName}`;
     await this.client.send(
       new PutObjectCommand({
         Bucket: storageConfig.s3Bucket,
