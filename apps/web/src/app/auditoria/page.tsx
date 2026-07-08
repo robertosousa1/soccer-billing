@@ -13,7 +13,7 @@ import { getAuditLog, type AuditEntryDTO, type AuditTipo } from "@/services/audi
 
 const TIPO_CONFIG: Record<AuditTipo, { label: string; cor: string }> = {
   JOGADOR_CRIADO:        { label: "Jogador criado",        cor: "bg-emerald-100 text-emerald-700" },
-  JOGADOR_EDITADO:       { label: "Jogador editado",       cor: "bg-blue-100 text-blue-700" },
+  JOGADOR_EDITADO:       { label: "Jogador editado",       cor: "bg-slate-200 text-slate-700" },
   JOGADOR_EXCLUIDO:      { label: "Jogador excluído",      cor: "bg-red-100 text-red-700" },
   APELIDO_ADICIONADO:    { label: "Apelido adicionado",    cor: "bg-teal-100 text-teal-700" },
   APELIDO_REMOVIDO:      { label: "Apelido removido",      cor: "bg-red-100 text-red-700" },
@@ -24,13 +24,13 @@ const TIPO_CONFIG: Record<AuditTipo, { label: string; cor: string }> = {
   ABONO_REMOVIDO:        { label: "Abono removido",        cor: "bg-red-100 text-red-700" },
   MEMBRO_ADICIONADO:     { label: "Membro adicionado",     cor: "bg-emerald-100 text-emerald-700" },
   MEMBRO_REMOVIDO:       { label: "Membro removido",       cor: "bg-red-100 text-red-700" },
-  MEMBRO_PERFIL_ALTERADO:{ label: "Perfil alterado",       cor: "bg-blue-100 text-blue-700" },
+  MEMBRO_PERFIL_ALTERADO:{ label: "Perfil alterado",       cor: "bg-slate-200 text-slate-700" },
   CONVITE_ENVIADO:       { label: "Convite enviado",       cor: "bg-sky-100 text-sky-700" },
   CONVITE_REENVIADO:     { label: "Convite reenviado",     cor: "bg-sky-100 text-sky-700" },
   CONVITE_ATIVADO:       { label: "Convite ativado",       cor: "bg-emerald-100 text-emerald-700" },
   CONVITE_CANCELADO:     { label: "Convite cancelado",     cor: "bg-red-100 text-red-700" },
   PELADA_CRIADA:         { label: "Pelada criada",         cor: "bg-emerald-100 text-emerald-700" },
-  PELADA_EDITADA:        { label: "Pelada editada",        cor: "bg-blue-100 text-blue-700" },
+  PELADA_EDITADA:        { label: "Pelada editada",        cor: "bg-slate-200 text-slate-700" },
   PELADA_ARQUIVADA:      { label: "Pelada arquivada",      cor: "bg-amber-100 text-amber-700" },
   PELADA_DESARQUIVADA:   { label: "Pelada desarquivada",   cor: "bg-teal-100 text-teal-700" },
   OWNERSHIP_TRANSFERIDA: { label: "Titularidade transferida", cor: "bg-purple-100 text-purple-700" },
@@ -148,7 +148,7 @@ export default function AuditoriaPage() {
         <>
         <ol className="relative border-l-2 border-line pl-6 space-y-5">
           {paginadas.map((entry) => {
-            const cfg = TIPO_CONFIG[entry.tipo];
+            const cfg = TIPO_CONFIG[entry.tipo] ?? { label: entry.tipo, cor: "bg-slate-100 text-slate-600" };
             return (
               <li key={entry.id} className="relative">
                 <span className="absolute -left-[29px] top-1 h-3 w-3 rounded-full border-2 border-line bg-card" />

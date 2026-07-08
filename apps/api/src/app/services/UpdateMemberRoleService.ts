@@ -38,7 +38,7 @@ export class UpdateMemberRoleService {
       peladaId,
       userId: actorUserId,
       tipo: "MEMBRO_PERFIL_ALTERADO",
-      sujeito: user?.name ?? userId,
+      sujeito: user ? `${user.name} <${user.email}>` : userId,
       alteracoes: [{ campo: "Perfil", de: ROLE_LABEL[member.role], para: ROLE_LABEL[role] }],
     });
 

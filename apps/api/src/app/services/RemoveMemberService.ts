@@ -26,7 +26,7 @@ export class RemoveMemberService {
       peladaId,
       userId: actorUserId,
       tipo: "MEMBRO_REMOVIDO",
-      sujeito: user?.name ?? userId,
+      sujeito: user ? `${user.name} <${user.email}>` : userId,
     });
   }
 }

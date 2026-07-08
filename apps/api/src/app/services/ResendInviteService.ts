@@ -45,7 +45,7 @@ export class ResendInviteService {
       peladaId,
       userId: actorUserId ?? null,
       tipo: "CONVITE_REENVIADO",
-      sujeito: invite.email,
+      sujeito: `${invite.name} <${invite.email}>`,
     });
   }
 }

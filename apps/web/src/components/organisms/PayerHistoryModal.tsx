@@ -93,9 +93,15 @@ export function PayerHistoryModal({ token, peladaId, payer, onClose }: PayerHist
                       {entry.alteracoes.map((alt, i) => (
                         <li key={i} className="text-xs">
                           <span className="font-medium">{alt.campo}:</span>{" "}
-                          <span className="text-muted">{formatValue(alt.campo, alt.de)}</span>
-                          {" → "}
-                          <span>{formatValue(alt.campo, alt.para)}</span>
+                          {entry.acao === "CRIACAO" ? (
+                            <span>{formatValue(alt.campo, alt.para)}</span>
+                          ) : (
+                            <>
+                              <span className="text-muted">{formatValue(alt.campo, alt.de)}</span>
+                              {" → "}
+                              <span>{formatValue(alt.campo, alt.para)}</span>
+                            </>
+                          )}
                         </li>
                       ))}
                     </ul>

@@ -16,9 +16,18 @@
 
 ---
 
+## Pendente de validar
+- [ ] 🔴 Auditoria: `PELADA_CRIADA`, `PELADA_EDITADA` (faltam no fluxo atual)
+- [ ] 🟡 Arquivar pelada (soft-disable sem excluir dados)
+- [ ] 🟡 Convite expira mas fica visível com status `EXPIRADO` na lista
+
 ## Padrão antigo
+- [ ] 🔴 Tela de gerenciamento da pelada inclusive renomeação 
+- [ ] 🔴 Quando dou f5 precisa selecionar a pelada novamente
+- [ ] 🔴 Validar o que é salvo no localstorage + cookies etc
 - [ ] 🔴 cadastrar pagamentos hoje é individual, ter uma forma de cadastro em massa
 - [ ] 🔴 relayout por skills de design.. principalmente opções de menu + adicionar logo na aplicação
+- [ ] 🔴 validar chamadas duplicadas
 
 - [ ] 🟢 lading page de divulgação com venda futura
 - [ ] 🟢 remover: POST /users (auto-cadastro com nome+e-mail+senha) é mantido sem alteração para a criação da conta do primeiro OWNER, mas não há botão de "registre-se" exposto na UI de login.

@@ -312,8 +312,8 @@ export default function MembrosPage() {
             </p>
           )}
 
-          {/* Convites pendentes — OWNER e ADMIN */}
-          {canManage && !loading && pendingInvites.length > 0 && (
+          {/* Convites pendentes — OWNER e ADMIN (cancelados ficam só na auditoria) */}
+          {canManage && !loading && pendingInvites.filter((i) => i.status !== "CANCELADO").length > 0 && (
             <div className="overflow-hidden rounded-card border border-line bg-card shadow-card">
               <div className="grid items-center gap-3 border-b border-line px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted"
                 style={{ gridTemplateColumns: "2.25rem 1fr 6rem 7rem 2.25rem 2.25rem" }}>
@@ -324,10 +324,9 @@ export default function MembrosPage() {
                 <span />
                 <span />
               </div>
-              {pendingInvites.map((inv, idx) => {
+              {pendingInvites.filter((i) => i.status !== "CANCELADO").map((inv, idx, arr) => {
                 const cooling = isCoolingDown(inv.id);
                 const roleCfg = ROLE_CONFIG[inv.role as MemberRole];
-                const isCancelled = inv.status === "CANCELADO";
                 const isExpired = inv.status === "EXPIRADO";
                 const statusCfg = {
                   PENDENTE:  { label: "Pendente",  cor: "bg-sky-100 text-sky-700" },
@@ -338,13 +337,13 @@ export default function MembrosPage() {
                   <div
                     key={inv.id}
                     className={`grid items-center gap-3 px-4 py-3.5 ${
-                      idx < pendingInvites.length - 1 ? "border-b border-line" : ""
+                      idx < arr.length - 1 ? "border-b border-line" : ""
                     } hover:bg-chalk`}
                     style={{ gridTemplateColumns: "2.25rem 1fr 6rem 7rem 2.25rem 2.25rem" }}
                   >
-                    <Clock className={`h-4 w-4 ${isCancelled || isExpired ? "text-muted/50" : "text-muted"}`} />
+                    <Clock className={`h-4 w-4 ${isExpired ? "text-muted/50" : "text-muted"}`} />
                     <div className="min-w-0">
-                      <p className={`truncate text-sm font-medium ${isCancelled ? "line-through text-muted" : ""}`}>{inv.name}</p>
+                      <p className={`truncate text-sm font-medium ${isExpired ? "text-muted" : ""}`}>{inv.name}</p>
                       <p className="truncate text-xs text-muted">{inv.email}</p>
                     </div>
                     <div className="flex justify-center">
@@ -361,10 +360,10 @@ export default function MembrosPage() {
                       variant="default"
                       size="sm"
                       className="!px-2"
-                      disabled={cooling || resending === inv.id || isCancelled}
+                      disabled={cooling || resending === inv.id || isExpired}
                       loading={resending === inv.id}
                       onClick={() => handleResend(inv)}
-                      title={isCancelled ? "Convite cancelado" : cooling ? "Aguarde 1 minuto para reenviar" : "Reenviar convite"}
+                      title={isExpired ? "Convite expirado" : cooling ? "Aguarde 1 minuto para reenviar" : "Reenviar convite"}
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
@@ -372,10 +371,10 @@ export default function MembrosPage() {
                       variant="danger"
                       size="sm"
                       className="!px-2"
-                      disabled={isCancelled || cancelling === inv.id}
+                      disabled={cancelling === inv.id}
                       loading={cancelling === inv.id}
                       onClick={() => handleCancel(inv)}
-                      title={isCancelled ? "Convite já cancelado" : "Cancelar convite"}
+                      title="Cancelar convite"
                     >
                       <X className="h-3.5 w-3.5" />
                     </Button>

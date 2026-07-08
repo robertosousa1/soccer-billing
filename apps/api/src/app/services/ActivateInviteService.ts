@@ -58,7 +58,7 @@ export class ActivateInviteService {
       peladaId: invite.peladaId,
       userId: user.id,
       tipo: "CONVITE_ATIVADO",
-      sujeito: user.name,
+      sujeito: `${user.name} <${user.email}>`,
       alteracoes: [{ campo: "Perfil", de: null, para: ROLE_LABEL[invite.role] ?? invite.role }],
     });
 

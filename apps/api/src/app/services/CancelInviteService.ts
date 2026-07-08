@@ -20,7 +20,7 @@ export class CancelInviteService {
       peladaId,
       userId: actorUserId,
       tipo: "CONVITE_CANCELADO",
-      sujeito: invite.email,
+      sujeito: `${invite.name} <${invite.email}>`,
     });
   }
 }

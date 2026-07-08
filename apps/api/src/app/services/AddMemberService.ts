@@ -47,7 +47,7 @@ export class AddMemberService {
         peladaId,
         userId: actorUserId ?? null,
         tipo: "MEMBRO_ADICIONADO",
-        sujeito: user.name,
+        sujeito: `${user.name} <${user.email}>`,
         alteracoes: [{ campo: "Perfil", de: null, para: ROLE_LABEL[role] }],
       });
       return { type: "added", member };
@@ -82,8 +82,8 @@ export class AddMemberService {
       peladaId,
       userId: actorUserId ?? null,
       tipo: "CONVITE_ENVIADO",
-      sujeito: email,
-      alteracoes: [{ campo: "Nome", de: null, para: name }, { campo: "Perfil", de: null, para: ROLE_LABEL[role] }],
+      sujeito: `${name} <${email}>`,
+      alteracoes: [{ campo: "Perfil", de: null, para: ROLE_LABEL[role] }],
     });
 
     return { type: "invited", email, name };

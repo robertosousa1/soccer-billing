@@ -35,12 +35,15 @@ export class TransferOwnershipService {
     ]);
 
     const newOwner = await this.usersRepository.findById(newOwnerUserId);
+    const newOwnerLabel = newOwner
+      ? `${newOwner.name} <${newOwner.email}>`
+      : newOwnerUserId;
     this.auditRepository.fire({
       peladaId,
       userId: currentOwnerId,
       tipo: "OWNERSHIP_TRANSFERIDA",
-      sujeito: newOwner?.name ?? newOwnerUserId,
-      alteracoes: [{ campo: "Proprietário", de: "Você", para: newOwner?.name ?? newOwnerUserId }],
+      sujeito: newOwnerLabel,
+      alteracoes: [{ campo: "Novo proprietário", de: "Você", para: newOwnerLabel }],
     });
   }
 }
